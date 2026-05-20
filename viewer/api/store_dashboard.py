@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import time
 
+from storage.records_index import find_record_index_row
 from viewer.api.agent_harness import agent_harness_from_record, within_agent_harness_filters
 from viewer.api.schemas import (
     DashboardCategoryStatsResponse,
@@ -47,7 +48,35 @@ class ViewerDashboardStore(ViewerStoreComponent):
     ) -> DashboardRecord | None:
         record = self.repo.read_json(self.repo.layout.record_metadata_path(record_id))
         if not isinstance(record, dict):
-            return None
+            row = find_record_index_row(self.repo, record_id)
+            if row is None:
+                return None
+            return DashboardRecord(
+                record_id=record_id,
+                created_at=_coerce_string(row.get("created_at")),
+                sdk_package=_normalize_sdk_package_value(row.get("sdk_package")),
+                total_cost_usd=(
+                    float(row.get("total_cost_usd"))
+                    if isinstance(row.get("total_cost_usd"), (int, float))
+                    else None
+                ),
+                effective_rating=(
+                    float(row.get("effective_rating"))
+                    if isinstance(row.get("effective_rating"), (int, float))
+                    else None
+                ),
+                author=_coerce_string(row.get("author")),
+                agent_harness=_coerce_string(row.get("agent_harness")) or "articraft",
+                run_id=_coerce_string(row.get("run_id")),
+                category_slug=category_slug_override or _coerce_string(row.get("category_slug")),
+                model_id=_coerce_string(row.get("model_id")),
+                input_tokens=row.get("input_tokens")
+                if isinstance(row.get("input_tokens"), int)
+                else None,
+                output_tokens=row.get("output_tokens")
+                if isinstance(row.get("output_tokens"), int)
+                else None,
+            )
 
         artifacts = record.get("artifacts") or {}
         record_dir = self.repo.layout.record_dir(record_id)

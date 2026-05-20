@@ -5,7 +5,9 @@ import json
 from pathlib import Path
 
 from storage.data_validation import validate_data_format
+from storage.lfs_pointers import LFS_POINTER_HEADER
 from storage.records import WORKBENCH_RECORD_GITIGNORE_TEXT
+from storage.records_index import write_records_index
 from storage.repo import StorageRepo
 
 
@@ -200,6 +202,64 @@ def test_validate_data_format_reports_cross_record_dataset_errors(tmp_path: Path
         for error in result.errors
     )
     assert any("missing revision artifact model.py" in error for error in result.errors)
+
+
+def test_validate_data_format_skips_unhydrated_index_records_by_default(
+    tmp_path: Path,
+) -> None:
+    repo = StorageRepo(tmp_path)
+    repo.ensure_layout()
+    prompt_sha = _write_system_prompt(repo)
+    _write_category(repo)
+    _write_batch_spec(repo)
+    _write_record(repo, "rec_hinge_0001", prompt_sha, "ds_hinge_0001")
+    write_records_index(repo)
+    repo.layout.record_metadata_path("rec_hinge_0001").write_text(
+        f"{LFS_POINTER_HEADER}\n"
+        "oid sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n"
+        "size 123\n",
+        encoding="utf-8",
+    )
+
+    result = validate_data_format(repo)
+
+    assert result.errors == []
+    assert result.records_index_count == 1
+    assert result.record_count == 0
+    assert result.skipped_unhydrated_record_count == 1
+
+
+def test_validate_data_format_require_record_fails_when_unhydrated(tmp_path: Path) -> None:
+    repo = StorageRepo(tmp_path)
+    repo.ensure_layout()
+    prompt_sha = _write_system_prompt(repo)
+    _write_category(repo)
+    _write_batch_spec(repo)
+    _write_record(repo, "rec_hinge_0001", prompt_sha, "ds_hinge_0001")
+    write_records_index(repo)
+    repo.layout.record_metadata_path("rec_hinge_0001").write_text(
+        f"{LFS_POINTER_HEADER}\n"
+        "oid sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n"
+        "size 123\n",
+        encoding="utf-8",
+    )
+
+    result = validate_data_format(repo, record_ids=["rec_hinge_0001"])
+
+    assert any("record payload is not hydrated" in error for error in result.errors)
+
+
+def test_validate_data_format_rejects_malformed_records_index(tmp_path: Path) -> None:
+    repo = StorageRepo(tmp_path)
+    repo.ensure_layout()
+    _write_system_prompt(repo)
+    _write_category(repo)
+    _write_batch_spec(repo)
+    repo.layout.records_index_path.write_text("{not-json}\n", encoding="utf-8")
+
+    result = validate_data_format(repo)
+
+    assert any("records_index.jsonl: line 1: invalid JSON" in error for error in result.errors)
 
 
 def test_validate_data_format_accepts_external_dataset_record(tmp_path: Path) -> None:

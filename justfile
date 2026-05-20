@@ -41,7 +41,6 @@ setup:
     uv run --frozen articraft env bootstrap
     uv sync --frozen --group dev
     uv run --frozen pre-commit install --hook-type pre-commit --hook-type pre-push
-    uv run --frozen articraft hooks install
     @if command -v npm >/dev/null 2>&1; then \
         npm --prefix viewer/web ci; \
         npm --prefix viewer/web run typecheck; \
@@ -54,7 +53,6 @@ setup:
 hooks-install:
     just uv-version-check
     uv run --frozen pre-commit install --hook-type pre-commit --hook-type pre-push
-    uv run --frozen articraft hooks install
 
 format:
     just uv-version-check
@@ -87,6 +85,22 @@ compile-all-force-limit limit:
 compile-all-full-force:
     just uv-version-check
     uv run --frozen articraft compile-all --target full --force
+
+data-hydrate-all:
+    just uv-version-check
+    uv run --frozen articraft data hydrate --all
+
+data-hydrate-record record:
+    just uv-version-check
+    uv run --frozen articraft data hydrate --record {{ quote(record) }}
+
+data-hydrate-category category:
+    just uv-version-check
+    uv run --frozen articraft data hydrate --category {{ quote(category) }}
+
+data-hydrate-time from to:
+    just uv-version-check
+    uv run --frozen articraft data hydrate --time-from {{ quote(from) }} --time-to {{ quote(to) }}
 
 smoke-tests:
     just uv-version-check

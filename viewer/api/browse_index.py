@@ -10,6 +10,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from storage.lfs import record_payload_status
+from storage.records_index import load_records_index
 from storage.repo import StorageRepo
 from storage.revisions import active_cost_path, active_provenance_path, active_traces_dir
 from viewer.api.agent_harness import agent_harness_from_record, within_agent_harness_filters
@@ -114,6 +116,7 @@ class BrowseIndexRecord:
     has_compile_report: bool
     has_provenance: bool
     has_cost: bool
+    payload_status: str
     source_files: tuple[BrowseSourceFile, ...]
 
     @classmethod
@@ -172,6 +175,7 @@ class BrowseIndexRecord:
             has_compile_report=bool(payload.get("has_compile_report", False)),
             has_provenance=bool(payload.get("has_provenance", False)),
             has_cost=bool(payload.get("has_cost", False)),
+            payload_status=_coerce_string(payload.get("payload_status")) or "hydrated",
             source_files=source_files,
         )
 
@@ -208,6 +212,7 @@ class BrowseIndexRecord:
             "has_compile_report": self.has_compile_report,
             "has_provenance": self.has_provenance,
             "has_cost": self.has_cost,
+            "payload_status": self.payload_status,
             "source_files": [source_file.to_payload() for source_file in self.source_files],
         }
 
@@ -246,6 +251,7 @@ class BrowseIndexRecord:
             has_compile_report=self.has_compile_report,
             has_provenance=self.has_provenance,
             has_cost=self.has_cost,
+            payload_status=self.payload_status,
         )
 
 
@@ -632,6 +638,13 @@ class DatasetBrowseIndex:
         )
 
     def _current_dataset_record_ids(self) -> frozenset[str]:
+        rows = load_records_index(self.repo)
+        if rows:
+            return frozenset(
+                str(row.get("record_id"))
+                for row in rows
+                if isinstance(row.get("record_id"), str) and row.get("dataset_id")
+            )
         records_root = self.repo.layout.records_root
         if not records_root.exists():
             return frozenset()
@@ -643,6 +656,10 @@ class DatasetBrowseIndex:
         )
 
     def _build_rows(self) -> list[BrowseIndexRecord]:
+        rows = self._build_rows_from_records_index()
+        if rows:
+            return rows
+
         records_root = self.repo.layout.records_root
         if not records_root.exists():
             return []
@@ -653,6 +670,74 @@ class DatasetBrowseIndex:
             if row is not None:
                 rows.append(row)
         return rows
+
+    def _build_rows_from_records_index(self) -> list[BrowseIndexRecord]:
+        index_rows = load_records_index(self.repo)
+        if not index_rows:
+            return []
+        source_file = BrowseSourceFile.from_path(
+            self.repo.root, self.repo.layout.records_index_path
+        )
+        rows: list[BrowseIndexRecord] = []
+        for row in index_rows:
+            browse_row = self._build_row_from_records_index(row, source_file)
+            if browse_row is not None:
+                rows.append(browse_row)
+        return rows
+
+    def _build_row_from_records_index(
+        self,
+        row: dict[str, Any],
+        source_file: BrowseSourceFile,
+    ) -> BrowseIndexRecord | None:
+        record_id = _coerce_string(row.get("record_id"))
+        dataset_id = _coerce_string(row.get("dataset_id"))
+        if record_id is None or dataset_id is None:
+            return None
+        collections = row.get("collections")
+        return BrowseIndexRecord(
+            record_id=record_id,
+            dataset_id=dataset_id,
+            promoted_at=str(row.get("promoted_at") or ""),
+            title=str(row.get("title") or record_id),
+            prompt_preview=str(row.get("prompt_preview") or ""),
+            rating=_coerce_rating(row.get("rating")),
+            secondary_rating=_coerce_rating(row.get("secondary_rating")),
+            effective_rating=_coerce_float(row.get("effective_rating")),
+            author=_coerce_string(row.get("author")),
+            rated_by=_coerce_string(row.get("rated_by")),
+            secondary_rated_by=_coerce_string(row.get("secondary_rated_by")),
+            created_at=_coerce_string(row.get("created_at")),
+            updated_at=_coerce_string(row.get("updated_at")),
+            sdk_package=_normalize_sdk_package_value(row.get("sdk_package")),
+            provider=_coerce_string(row.get("provider")),
+            model_id=_coerce_string(row.get("model_id")),
+            creator_mode=_coerce_string(row.get("creator_mode")),
+            external_agent=_coerce_string(row.get("external_agent")),
+            agent_harness=_coerce_string(row.get("agent_harness")) or "articraft",
+            has_traces=bool(row.get("has_traces", False)),
+            thinking_level=_coerce_string(row.get("thinking_level")),
+            turn_count=_coerce_int(row.get("turn_count")),
+            input_tokens=_coerce_int(row.get("input_tokens")),
+            output_tokens=_coerce_int(row.get("output_tokens")),
+            total_cost_usd=_coerce_float(row.get("total_cost_usd")),
+            category_slug=_coerce_string(row.get("category_slug")),
+            run_id=_coerce_string(row.get("run_id")),
+            collections=(
+                tuple(str(item) for item in collections) if isinstance(collections, list) else ()
+            ),
+            has_compile_report=bool(row.get("has_compile_report", False)),
+            has_provenance=bool(row.get("has_provenance", False)),
+            has_cost=bool(row.get("has_cost", False)),
+            payload_status=record_payload_status(self.repo, record_id),
+            source_files=(
+                source_file,
+                BrowseSourceFile.from_path(
+                    self.repo.root,
+                    self.repo.layout.record_metadata_path(record_id),
+                ),
+            ),
+        )
 
     def _build_row(self, record_dir: Path) -> BrowseIndexRecord | None:
         record_id = record_dir.name
@@ -751,6 +836,7 @@ class DatasetBrowseIndex:
             has_compile_report=compile_path.exists(),
             has_provenance=provenance_path.exists(),
             has_cost=cost_path.exists(),
+            payload_status=record_payload_status(self.repo, record_id),
             source_files=tuple(source_files),
         )
 

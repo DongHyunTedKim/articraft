@@ -22,12 +22,23 @@ Articraft transforms the creation of articulated 3D assets into a programmatic, 
 - Python 3.12 recommended (or 3.11). *Note: 3.13+ is not currently supported.*
 - [`uv`](https://docs.astral.sh/uv/) for incredibly fast Python package management.
 - [`just`](https://github.com/casey/just) as the command runner.
+- [`Git LFS`](https://git-lfs.com/) for hydrating dataset records on demand.
 - [`npm`](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm) (optional, but needed for local viewer frontend).
 
 ### 2. Setup
 From the repo root, run:
 ```bash
 just setup
+```
+
+Fresh clones are code-first: `data/records/**` is stored with Git LFS and excluded from automatic LFS fetch by `.lfsconfig`, so it does not need to be hydrated before developing the code or browsing indexed metadata. Hydrate records only when you want to inspect, render, or edit their payloads:
+
+```bash
+uv run articraft data hydrate --record <record_id>
+uv run articraft data hydrate --category <category_slug>
+uv run articraft data hydrate --time-from 2026-04-01 --time-to 2026-04-07
+uv run articraft data hydrate --last 7d
+uv run articraft data hydrate --all
 ```
 
 ### 3. Add API Keys
@@ -54,6 +65,8 @@ Browse the objects you just generated. The local viewer API and React frontend c
 ```bash
 just viewer
 ```
+
+The viewer can browse/search the dataset from `data/records_index.jsonl` before record payloads are hydrated. When you select an unhydrated record, use the "Hydrate record" action before opening source files, traces, or rendered assets.
 
 ### 6. Edit an Existing Asset
 Fork an existing record when you want to modify it:

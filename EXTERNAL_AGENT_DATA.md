@@ -48,6 +48,14 @@ uv sync --group dev
 uv run articraft init
 ```
 
+Dataset record payloads are stored in Git LFS. You can browse/search metadata before hydration, but hydrate any existing record before inspecting, checking, forking, or rendering it:
+
+```bash
+uv run articraft data hydrate --record <record_id>
+uv run articraft data hydrate --category <category_slug>
+uv run articraft data hydrate --last 7d
+```
+
 ## 2. Create A Record
 
 Create the record through the external CLI and identify yourself explicitly:
@@ -81,6 +89,7 @@ Allowed external agent ids are:
 When the user asks you to modify an existing Articraft asset, fork it instead of manually copying record folders.
 
 ```bash
+uv run articraft data hydrate --record <record_id>
 uv run articraft external fork --agent codex data/records/<record_id> "make the handle longer"
 uv run articraft external fork --agent claude-code data/records/<record_id> "make the handle longer"
 uv run articraft external fork --agent cursor data/records/<record_id> "make the handle longer"
@@ -161,6 +170,7 @@ You must:
 - preserve `creator.agent=codex`, `creator.agent=claude-code`, or `creator.agent=cursor`
 - preserve `creator.trace_available=false`
 - use `articraft external check` and `finalize`
+- update `data/records_index.jsonl` with `uv run articraft data build-record-index` before committing dataset records
 - leave workbench-only records uncommitted
 - edit only the active revision `model.py` path printed by the CLI
 

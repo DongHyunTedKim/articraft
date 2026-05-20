@@ -359,7 +359,8 @@ def test_runtime_error_failure_uses_remote_traceback_location_lines() -> None:
 
 def test_non_runtime_error_failure_sanitizes_local_location_lines() -> None:
     source = "def build():\n    raise ValueError('bad loft')\n\nbuild()\n"
-    filename = "/Users/matthewzhou/articraft/agent/generated_model.py"
+    repo_root = Path(__file__).resolve().parents[2]
+    filename = str(repo_root / "agent/generated_model.py")
     linecache.cache[filename] = (len(source), None, source.splitlines(True), filename)
 
     try:
@@ -373,7 +374,7 @@ def test_non_runtime_error_failure_sanitizes_local_location_lines() -> None:
 
     signal = next(signal for signal in bundle.signals if signal.kind == "compile_runtime")
     assert "Location: agent/generated_model.py:2" in signal.details
-    assert "/Users/matthewzhou/articraft/agent/generated_model.py:2" not in signal.details
+    assert f"{filename}:2" not in signal.details
     assert "Code:     raise ValueError('bad loft')" in signal.details
 
 

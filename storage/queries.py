@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
+from storage.records_index import load_records_index
 from storage.repo import StorageRepo
 
 
@@ -11,10 +12,16 @@ class StorageQueries:
     repo: StorageRepo
 
     def list_record_ids(self) -> list[str]:
+        record_ids = {
+            str(row.get("record_id"))
+            for row in load_records_index(self.repo)
+            if isinstance(row.get("record_id"), str)
+        }
         records_root = self.repo.layout.records_root
         if not records_root.exists():
-            return []
-        return sorted(path.name for path in records_root.iterdir() if path.is_dir())
+            return sorted(record_ids)
+        record_ids.update(path.name for path in records_root.iterdir() if path.is_dir())
+        return sorted(record_ids)
 
     def list_category_slugs(self) -> list[str]:
         categories_root = self.repo.layout.categories_root
@@ -23,14 +30,20 @@ class StorageQueries:
         return sorted(path.name for path in categories_root.iterdir() if path.is_dir())
 
     def list_record_ids_for_category(self, category_slug: str) -> list[str]:
-        record_ids: list[str] = []
+        record_ids = {
+            str(row.get("record_id"))
+            for row in load_records_index(self.repo)
+            if row.get("category_slug") == category_slug and isinstance(row.get("record_id"), str)
+        }
         for record_id in self.list_record_ids():
+            if record_id in record_ids:
+                continue
             record = self.repo.read_json(self.repo.layout.record_metadata_path(record_id))
             if not isinstance(record, dict):
                 continue
             if str(record.get("category_slug") or "") == category_slug:
-                record_ids.append(record_id)
-        return record_ids
+                record_ids.add(record_id)
+        return sorted(record_ids)
 
     def list_run_ids_for_category(self, category_slug: str) -> list[str]:
         runs_root = self.repo.layout.runs_root

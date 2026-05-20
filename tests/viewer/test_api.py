@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -314,6 +315,48 @@ def test_viewer_api_smoke_bootstrap_browse_search_and_assets(tmp_path: Path) -> 
     mesh_file = client.get("/api/records/rec_hinge_001/files/assets/meshes/part.obj")
     assert mesh_file.status_code == 200
     assert "v 1 0 0" in mesh_file.text
+
+
+def test_viewer_api_uses_records_index_for_unhydrated_dataset_record(tmp_path: Path) -> None:
+    repo = StorageRepo(tmp_path)
+    repo.ensure_layout()
+    repo.write_text(
+        repo.layout.records_index_path,
+        json.dumps(
+            {
+                "schema_version": 1,
+                "record_id": "rec_unhydrated_001",
+                "dataset_id": "ds_unhydrated_001",
+                "category_slug": "hinges",
+                "title": "Pointer-only hinge",
+                "prompt_preview": "A hinge that is available through Git LFS.",
+                "rating": 5,
+                "effective_rating": 5.0,
+                "created_at": "2026-03-18T08:00:00Z",
+                "updated_at": "2026-03-18T08:00:00Z",
+                "sdk_package": "sdk",
+                "provider": "openai",
+                "model_id": "gpt-5.4",
+                "collections": ["dataset"],
+            }
+        )
+        + "\n",
+    )
+
+    client = TestClient(create_app(repo_root=tmp_path))
+
+    summary = client.get("/api/records/rec_unhydrated_001/summary")
+    assert summary.status_code == 200
+    assert summary.json()["payload_status"] == "missing"
+
+    browse = client.get("/api/records/browse?source=dataset")
+    assert browse.status_code == 200
+    assert browse.json()["records"][0]["record_id"] == "rec_unhydrated_001"
+    assert browse.json()["records"][0]["payload_status"] == "missing"
+
+    file_response = client.get("/api/records/rec_unhydrated_001/files/model.py")
+    assert file_response.status_code == 409
+    assert "data hydrate --record rec_unhydrated_001" in file_response.json()["detail"]
 
 
 def test_viewer_api_promote_uses_category_slug_not_display_title(

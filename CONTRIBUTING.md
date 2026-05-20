@@ -10,7 +10,6 @@ Thank you for your interest in improving Articraft! We welcome contributions fro
     uv sync --group dev
     npm --prefix viewer/web ci
     uv run pre-commit install --hook-type pre-commit --hook-type pre-push
-    uv run articraft hooks install
     ```
 
 ## Development Workflow
@@ -20,6 +19,8 @@ We use `just` as our primary task runner. Run `just` without arguments to see al
 - `just format`: Format code using Ruff.
 - `just lint`: Lint code with Ruff.
 - `just viewer-dev`: Start both the uvicorn API and Vite frontend for rapid local UI iteration.
+- `just data-hydrate-record <record_id>`: Hydrate one LFS-backed dataset record.
+- `just data-hydrate-category <category_slug>`: Hydrate records in a category.
 
 ### Python Development
 Target Python 3.11+. The repo is managed by `uv` and uses `ruff` for all formatting and checking. Make sure you run `just format` and `just lint` before submitting a PR.
@@ -69,13 +70,16 @@ A huge part of Articraft's mission is crowdsourcing a massive, diverse dataset. 
    - *Bulk Generation*: Use batch CSVs. See our [Dataset Generation Guide](docs/dataset_generation.md).
 2. **Local Validation**: 
    - All assets MUST compile without errors locally. Any physics warnings, overlapping parts, or disconnected links must be fixed before proceeding.
+   - Fresh checkouts keep `data/records/**` in Git LFS. Hydrate only the records you need: `uv run articraft data hydrate --record <id>`, `--category <slug>`, `--time-from/--time-to`, `--last 7d`, or `--all`.
 3. **Visual Curation & Rating**:
    - Open the viewer (`just viewer`) and manually inspect your generated asset.
    - **Crucial Step:** Rate the asset! You must use the viewer's rating system (1-5 stars) to submit an asset. We accept all ratings (even 1-star assets are incredibly useful as negative examples), but you must actively record the rating.
 4. **Finalize & Categorize**:
    - Only records assigned to a dataset category should be pushed. Workbench records are local drafts.
 5. **Commit and PR**:
-   - Stage **only** the `data/records/<id>` folders. The pre-commit hooks will block caches and URDF files.
+   - Stage the changed `data/records/<id>` folders and the updated `data/records_index.jsonl`.
+   - Run `uv run articraft data build-record-index` after adding, promoting, rating, or editing records.
+   - Contributors need Git LFS installed before pushing record payloads.
    - Create a PR with standard naming, for instance: `Add 50 washing machines to dataset`.
    - **Massive PRs Are Welcome**: You can submit anywhere from a single object to thousands of records at once.
    - **Screenshots Strongly Encouraged**: Including a screenshot or GIF of the asset in the PR description makes reviewer validation much faster.

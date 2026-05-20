@@ -21,6 +21,7 @@ from cli import hooks as hooks_cli
 from cli import pre_commit as pre_commit_cli
 from cli import workbench as workbench_cli
 from cli.common import provider_for_record_image, refresh_dataset_manifest_if_member
+from storage.records_index import find_record_index_row
 from storage.repo import StorageRepo
 from storage.search import SearchIndex
 
@@ -258,6 +259,8 @@ def _resolve_record_id(repo_root: Path, record_ref: str) -> str:
     if not record_id:
         raise ValueError("Record reference is required.")
     if repo.layout.record_metadata_path(record_id).exists():
+        return record_id
+    if find_record_index_row(repo, record_id) is not None:
         return record_id
     raise ValueError(f"Record not found: {record_ref}")
 
@@ -540,7 +543,39 @@ def _run_dataset_dispatch(args: argparse.Namespace) -> int:
 
 
 def _run_data_check(args: argparse.Namespace) -> int:
-    return _dataset(args, ["validate-format"])
+    argv = ["validate-format"]
+    if args.require_records:
+        argv.append("--require-records")
+    for record_id in args.records or []:
+        argv.extend(["--record", record_id])
+    return _dataset(args, argv)
+
+
+def _run_data_hydrate(args: argparse.Namespace) -> int:
+    argv = ["hydrate"]
+    for record_id in args.records or []:
+        argv.extend(["--record", record_id])
+    if args.category:
+        argv.extend(["--category", args.category])
+    if args.time_from:
+        argv.extend(["--time-from", args.time_from])
+    if args.time_to:
+        argv.extend(["--time-to", args.time_to])
+    if args.last:
+        argv.extend(["--last", args.last])
+    if args.all_records:
+        argv.append("--all")
+    if args.from_file:
+        argv.extend(["--from-file", str(args.from_file)])
+    return _dataset(args, argv)
+
+
+def _run_data_lfs_status(args: argparse.Namespace) -> int:
+    return _dataset(args, ["lfs-status"])
+
+
+def _run_data_build_record_index(args: argparse.Namespace) -> int:
+    return _dataset(args, ["build-record-index"])
 
 
 def _run_env_bootstrap(args: argparse.Namespace) -> int:
@@ -698,7 +733,28 @@ def _build_parser() -> argparse.ArgumentParser:
     data_sub = data.add_subparsers(dest="data_command", required=True)
     data_check = data_sub.add_parser("check", help="Validate checked-in data format.")
     _add_repo_root(data_check)
+    data_check.add_argument("--require-records", action="store_true")
+    data_check.add_argument("--record", dest="records", action="append", default=[])
     data_check.set_defaults(func=_run_data_check)
+    data_hydrate = data_sub.add_parser("hydrate", help="Hydrate LFS-backed records.")
+    _add_repo_root(data_hydrate)
+    data_hydrate.add_argument("--record", dest="records", action="append", default=[])
+    data_hydrate.add_argument("--category", default=None)
+    data_hydrate.add_argument("--time-from", default=None)
+    data_hydrate.add_argument("--time-to", default=None)
+    data_hydrate.add_argument("--last", default=None)
+    data_hydrate.add_argument("--all", action="store_true", dest="all_records")
+    data_hydrate.add_argument("--from-file", type=Path, default=None)
+    data_hydrate.set_defaults(func=_run_data_hydrate)
+    data_lfs_status = data_sub.add_parser("lfs-status", help="Show record LFS status.")
+    _add_repo_root(data_lfs_status)
+    data_lfs_status.set_defaults(func=_run_data_lfs_status)
+    data_record_index = data_sub.add_parser(
+        "build-record-index",
+        help="Build data/records_index.jsonl from hydrated records.",
+    )
+    _add_repo_root(data_record_index)
+    data_record_index.set_defaults(func=_run_data_build_record_index)
 
     external = subparsers.add_parser(
         "external",

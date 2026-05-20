@@ -12,7 +12,10 @@ from typing import Any
 from articraft.values import PROVIDER_VALUE_SET, THINKING_LEVEL_VALUE_SET
 from storage.identifiers import RECORD_ID_RE as _RECORD_ID_RE
 from storage.identifiers import SLUG_RE as _SLUG_RE
+from storage.lfs import record_payload_status
+from storage.lfs_pointers import is_lfs_pointer_file
 from storage.records import WORKBENCH_RECORD_GITIGNORE_TEXT
+from storage.records_index import RECORDS_INDEX_SCHEMA_VERSION
 from storage.repo import StorageRepo
 from storage.revisions import REVISION_ID_RE, active_provenance_path, active_traces_dir
 
@@ -54,28 +57,50 @@ class DataFormatValidationResult:
     batch_spec_count: int = 0
     record_count: int = 0
     dataset_entry_count: int = 0
+    records_index_count: int = 0
     skipped_local_record_count: int = 0
+    skipped_unhydrated_record_count: int = 0
 
     @property
     def ok(self) -> bool:
         return not self.errors
 
 
-def validate_data_format(repo: StorageRepo) -> DataFormatValidationResult:
-    validator = _DataFormatValidator(repo)
+def validate_data_format(
+    repo: StorageRepo,
+    *,
+    require_records: bool = False,
+    record_ids: list[str] | None = None,
+) -> DataFormatValidationResult:
+    validator = _DataFormatValidator(
+        repo,
+        require_records=require_records,
+        record_ids=record_ids,
+    )
     return validator.validate()
 
 
 class _DataFormatValidator:
-    def __init__(self, repo: StorageRepo) -> None:
+    def __init__(
+        self,
+        repo: StorageRepo,
+        *,
+        require_records: bool,
+        record_ids: list[str] | None,
+    ) -> None:
         self.repo = repo
+        self.require_records = require_records
+        self.requested_record_ids = set(record_ids or [])
         self.errors: list[str] = []
         self.category_slugs: set[str] = set()
+        self.index_record_ids: set[str] = set()
         self.category_count = 0
         self.batch_spec_count = 0
         self.record_count = 0
         self.dataset_entry_count = 0
+        self.records_index_count = 0
         self.skipped_local_record_count = 0
+        self.skipped_unhydrated_record_count = 0
 
     def validate(self) -> DataFormatValidationResult:
         self._validate_json_files()
@@ -83,6 +108,7 @@ class _DataFormatValidator:
         self._validate_categories()
         self._validate_supercategories()
         self._validate_batch_specs()
+        self._validate_records_index()
         self._validate_records()
         return DataFormatValidationResult(
             errors=self.errors,
@@ -90,7 +116,9 @@ class _DataFormatValidator:
             batch_spec_count=self.batch_spec_count,
             record_count=self.record_count,
             dataset_entry_count=self.dataset_entry_count,
+            records_index_count=self.records_index_count,
             skipped_local_record_count=self.skipped_local_record_count,
+            skipped_unhydrated_record_count=self.skipped_unhydrated_record_count,
         )
 
     def _display_path(self, path: Path) -> str:
@@ -121,6 +149,8 @@ class _DataFormatValidator:
         for path in sorted(data_root.rglob("*.json")):
             relative_parts = path.relative_to(data_root).parts
             if relative_parts and relative_parts[0] in {"cache", "local"}:
+                continue
+            if relative_parts and relative_parts[0] == "records" and is_lfs_pointer_file(path):
                 continue
             self._load_json(path)
 
@@ -343,15 +373,112 @@ class _DataFormatValidator:
     def _validate_records(self) -> None:
         root = self.repo.layout.records_root
         if not root.exists():
+            if self.index_record_ids:
+                self.skipped_unhydrated_record_count += len(self.index_record_ids)
+                if self.require_records:
+                    self._add_error(
+                        root, "missing records directory while --require-records is set"
+                    )
+                return
             self._add_error(root, "missing records directory")
             return
         seen_dataset_ids: dict[str, str] = {}
+        hydrated_or_pointer_ids = {path.name for path in root.iterdir() if path.is_dir()}
+        indexed_missing_ids = self.index_record_ids - hydrated_or_pointer_ids
+        for record_id in sorted(indexed_missing_ids):
+            if self.requested_record_ids and record_id not in self.requested_record_ids:
+                continue
+            self.skipped_unhydrated_record_count += 1
+            if self.require_records or record_id in self.requested_record_ids:
+                self._add_error(self.repo.layout.record_dir(record_id), "record payload is missing")
+
+        requested_missing = (
+            self.requested_record_ids - hydrated_or_pointer_ids - self.index_record_ids
+        )
+        for record_id in sorted(requested_missing):
+            self._add_error(self.repo.layout.record_dir(record_id), "record not found")
+
         for record_dir in sorted(path for path in root.iterdir() if path.is_dir()):
+            if self.requested_record_ids and record_dir.name not in self.requested_record_ids:
+                continue
             if self._is_local_workbench_record_dir(record_dir):
                 self.skipped_local_record_count += 1
                 continue
+            status = record_payload_status(self.repo, record_dir.name)
+            if status != "hydrated":
+                self.skipped_unhydrated_record_count += 1
+                if self.require_records or record_dir.name in self.requested_record_ids:
+                    self._add_error(record_dir / "record.json", "record payload is not hydrated")
+                continue
             self.record_count += 1
             self._validate_record_dir(record_dir, seen_dataset_ids)
+
+    def _validate_records_index(self) -> None:
+        path = self.repo.layout.records_index_path
+        if not path.exists():
+            return
+        seen_record_ids: set[str] = set()
+        seen_dataset_ids: dict[str, str] = {}
+        try:
+            lines = path.read_text(encoding="utf-8").splitlines()
+        except OSError as exc:
+            self._add_error(path, f"failed to read records index: {exc}")
+            return
+        for line_number, line in enumerate(lines, start=1):
+            if not line.strip():
+                continue
+            try:
+                row = json.loads(line)
+            except json.JSONDecodeError as exc:
+                self._add_error(
+                    path,
+                    f"line {line_number}: invalid JSON: {exc.msg} at column {exc.colno}",
+                )
+                continue
+            if not isinstance(row, dict):
+                self._add_error(path, f"line {line_number}: index row must be a JSON object")
+                continue
+            self.records_index_count += 1
+            if row.get("schema_version") != RECORDS_INDEX_SCHEMA_VERSION:
+                self._add_error(
+                    path,
+                    f"line {line_number}: unsupported schema_version={row.get('schema_version')!r}",
+                )
+            record_id = row.get("record_id")
+            if not isinstance(record_id, str) or not _RECORD_ID_RE.fullmatch(record_id):
+                self._add_error(path, f"line {line_number}: invalid record_id={record_id!r}")
+                continue
+            if record_id in seen_record_ids:
+                self._add_error(path, f"line {line_number}: duplicate record_id={record_id}")
+            seen_record_ids.add(record_id)
+            self.index_record_ids.add(record_id)
+            category_slug = row.get("category_slug")
+            if category_slug is not None:
+                if not isinstance(category_slug, str) or not _SLUG_RE.fullmatch(category_slug):
+                    self._add_error(
+                        path, f"line {line_number}: invalid category_slug={category_slug!r}"
+                    )
+                elif category_slug not in self.category_slugs:
+                    self._add_error(
+                        path,
+                        f"line {line_number}: category_slug references missing category={category_slug}",
+                    )
+            dataset_id = row.get("dataset_id")
+            if dataset_id is not None:
+                if not isinstance(dataset_id, str) or not dataset_id.strip():
+                    self._add_error(path, f"line {line_number}: dataset_id must be non-empty")
+                else:
+                    prior_record_id = seen_dataset_ids.get(dataset_id)
+                    if prior_record_id is not None and prior_record_id != record_id:
+                        self._add_error(
+                            path,
+                            f"line {line_number}: duplicate dataset_id={dataset_id} already used by {prior_record_id}",
+                        )
+                    seen_dataset_ids[dataset_id] = record_id
+            for key in ("created_at", "updated_at"):
+                value = row.get(key)
+                if value is not None and not _is_utc_timestamp(value):
+                    self._add_error(path, f"line {line_number}: {key} must be a UTC timestamp")
 
     def _is_local_workbench_record_dir(self, record_dir: Path) -> bool:
         if self.repo.layout.record_dataset_entry_path(record_dir.name).exists():

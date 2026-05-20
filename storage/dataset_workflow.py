@@ -14,6 +14,7 @@ from storage.identifiers import (
 from storage.models import CategoryRecord
 from storage.queries import StorageQueries
 from storage.records import RecordStore, remove_workbench_record_gitignore_marker
+from storage.records_index import write_records_index
 from storage.repo import StorageRepo
 from storage.search import SearchIndex, SearchIndexStats
 
@@ -282,6 +283,7 @@ def promote_record_workflow(
         sequence=None,
     )
     manifest = datasets.write_dataset_manifest()
+    write_records_index(repo)
     search_stats = SearchIndex(repo).rebuild()
     entry = datasets.load_entry(record_id)
     if not isinstance(entry, dict):

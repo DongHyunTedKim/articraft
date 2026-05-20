@@ -6,6 +6,7 @@ from pathlib import Path
 from storage.identifiers import validate_category_slug, validate_dataset_id, validate_record_id
 from storage.models import DatasetEntry
 from storage.records import remove_workbench_record_gitignore_marker
+from storage.records_index import load_records_index, row_to_dataset_entry
 from storage.repo import StorageRepo
 
 
@@ -13,7 +14,7 @@ from storage.repo import StorageRepo
 class DatasetStore:
     repo: StorageRepo
     _dataset_id_index_cache: dict[str, str] | None = field(default=None, init=False, repr=False)
-    _dataset_id_index_token: tuple[int | None, int | None] | None = field(
+    _dataset_id_index_token: tuple[int | None, int | None, int | None] | None = field(
         default=None,
         init=False,
         repr=False,
@@ -25,14 +26,21 @@ class DatasetStore:
         except OSError:
             return None
 
-    def _dataset_id_index_fs_token(self) -> tuple[int | None, int | None]:
+    def _dataset_id_index_fs_token(self) -> tuple[int | None, int | None, int | None]:
         return (
             self._path_mtime_ns(self.repo.layout.records_root),
+            self._path_mtime_ns(self.repo.layout.records_index_path),
             self._path_mtime_ns(self.repo.layout.dataset_manifest_path()),
         )
 
     def _build_dataset_id_index_from_records(self) -> dict[str, str]:
         dataset_id_to_record_id: dict[str, str] = {}
+        for row in load_records_index(self.repo):
+            entry = row_to_dataset_entry(row)
+            if entry is None:
+                continue
+            dataset_id_to_record_id[str(entry["dataset_id"])] = str(entry["record_id"])
+
         records_root = self.repo.layout.records_root
         if not records_root.exists():
             return dataset_id_to_record_id
@@ -62,7 +70,13 @@ class DatasetStore:
     def load_entry(self, record_id: str) -> dict | None:
         validated_record_id = validate_record_id(record_id)
         entry = self.repo.read_json(self.repo.layout.record_dataset_entry_path(validated_record_id))
-        return entry if isinstance(entry, dict) else None
+        if isinstance(entry, dict):
+            return entry
+        for row in load_records_index(self.repo):
+            if row.get("record_id") != validated_record_id:
+                continue
+            return row_to_dataset_entry(row)
+        return None
 
     def find_record_id_by_dataset_id(self, dataset_id: str) -> str | None:
         record_id = self._dataset_id_index().get(dataset_id)
@@ -70,13 +84,22 @@ class DatasetStore:
 
     def list_entries(self) -> list[dict]:
         entries: list[dict] = []
+        for row in load_records_index(self.repo):
+            entry = row_to_dataset_entry(row)
+            if entry is not None:
+                entries.append(entry)
+
         records_root = self.repo.layout.records_root
         if not records_root.exists():
-            return entries
+            return sorted(
+                entries, key=lambda entry: (str(entry["dataset_id"]), str(entry["record_id"]))
+            )
+        entries_by_record_id = {str(item["record_id"]): item for item in entries}
         for record_dir in sorted(path for path in records_root.iterdir() if path.is_dir()):
             entry = self.load_entry(record_dir.name)
             if entry is not None:
-                entries.append(entry)
+                entries_by_record_id[str(entry["record_id"])] = entry
+        entries = list(entries_by_record_id.values())
         return sorted(
             entries, key=lambda entry: (str(entry["dataset_id"]), str(entry["record_id"]))
         )

@@ -1,1 +1,0 @@
-A three-link articulated task arm with shoulder, elbow, and wrist revolute joints ending in a fixed rectangular pad.

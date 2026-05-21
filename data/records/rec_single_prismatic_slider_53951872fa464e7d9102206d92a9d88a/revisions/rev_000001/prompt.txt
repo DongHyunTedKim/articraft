@@ -1,1 +1,0 @@
-A channel-runner slide module. A fixed channel guide carries a compact runner with a plain output plate at one end. The runner moves on one prismatic joint along the supported channel axis.

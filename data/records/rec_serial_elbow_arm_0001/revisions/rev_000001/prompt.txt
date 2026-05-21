@@ -1,1 +1,0 @@
-An industrial pick-and-place arm with two main revolute joints and a short forearm, using straight mechanical links and visible joint hubs.

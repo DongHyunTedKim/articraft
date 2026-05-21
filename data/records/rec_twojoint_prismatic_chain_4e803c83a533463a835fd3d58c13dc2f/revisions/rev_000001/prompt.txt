@@ -1,1 +1,0 @@
-A nested two-carriage transfer chain. A fixed guide frame carries a broad first carriage, and the first carriage carries a smaller output carriage. The carriages form two serial prismatic joints along the common axis.

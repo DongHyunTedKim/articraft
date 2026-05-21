@@ -1,1 +1,0 @@
-A swing-arm floor lamp with a rectangular base, a fixed column, and a single arm on two revolute joints that swings a conical shade outward.

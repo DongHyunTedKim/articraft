@@ -1,1 +1,0 @@
-An orthogonal YZ stage with one lateral slide and one vertical slide, built from linear guide blocks and rectangular support frames.

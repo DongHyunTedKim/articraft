@@ -1,1 +1,0 @@
-A radial base supporting three separate revolute branches, each with simple rigid links and compact bearing housings.

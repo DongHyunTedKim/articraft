@@ -1,1 +1,0 @@
-A lightweight articulated arm featuring a rotary shoulder, rotary elbow, and single wrist joint, modeled as a clean CAD mechanism.

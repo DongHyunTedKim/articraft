@@ -231,11 +231,6 @@ export function useThreeScene(
 
     const renderScene = (deltaSeconds?: number) => {
       void deltaSeconds;
-      console.log("[ThreeScene] Rendering scene to WebGL canvas...", {
-        width: renderer.domElement.width,
-        height: renderer.domElement.height,
-        sceneChildren: scene.children.length
-      });
       renderer.render(scene, camera);
     };
 
@@ -260,13 +255,6 @@ export function useThreeScene(
       }
 
       const controlsChanged = controls.update(deltaSeconds ?? undefined);
-      
-      console.log("[ThreeScene] renderFrame tick", {
-        hadInvalidation,
-        invalidationsRemaining: invalidationsRemainingRef.current,
-        controlsChanged,
-        continuousRender: continuousRenderRef.current
-      });
 
       if (continuousRenderRef.current || hadInvalidation || controlsChanged) {
         renderScene(deltaSeconds ?? undefined);
@@ -281,9 +269,15 @@ export function useThreeScene(
     };
 
     const invalidate = () => {
-      console.log("[ThreeScene] invalidate() triggered");
       invalidationsRemainingRef.current = 5; // Force rendering for the next 5 frames to ensure WebGL upload finishes
       needsRenderRef.current = true;
+
+      // Ensure synchronous render on invalidate to guarantee immediately visible pixels
+      // even if requestAnimationFrame loop is delayed or suspended by the browser.
+      if (renderer && scene && camera) {
+        renderer.render(scene, camera);
+      }
+
       requestFrame();
     };
 
@@ -340,7 +334,9 @@ export function useThreeScene(
       environmentMapRef.current = null;
       lastFrameTimeRef.current = null;
       needsRenderRef.current = false;
-      invalidateRef.current = () => {};
+      if (invalidateRef.current === invalidate) {
+        invalidateRef.current = () => {};
+      }
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 

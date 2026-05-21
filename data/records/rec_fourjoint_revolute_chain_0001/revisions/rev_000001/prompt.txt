@@ -1,1 +1,0 @@
-A four-link deployable arm with four serial revolute joints and a small fixed sensor pod at the tip.

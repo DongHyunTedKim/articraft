@@ -1,1 +1,0 @@
-A mine shaft cage elevator with a rectangular open-frame cage and vertical guide rails. The cage slides prismatically along two vertical guide rails. A sliding gate on the cage entrance moves prismatically on horizontal guide rails across the cage frame.

@@ -1,1 +1,0 @@
-An octocopter with a flat octagonal center plate and eight equal radial arms fixed to the plate. Each motor propeller rotates continuously about its vertical axis.

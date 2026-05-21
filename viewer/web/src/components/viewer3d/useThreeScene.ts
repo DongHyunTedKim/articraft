@@ -150,6 +150,7 @@ export function useThreeScene(
   const continuousRenderRef = useRef(Boolean(options.continuousRender));
   const fancyGraphicsRef = useRef(Boolean(options.fancyGraphics));
   const needsRenderRef = useRef(false);
+  const invalidationsRemainingRef = useRef(0);
   const invalidateRef = useRef<() => void>(() => {});
 
   useEffect(() => {
@@ -230,6 +231,11 @@ export function useThreeScene(
 
     const renderScene = (deltaSeconds?: number) => {
       void deltaSeconds;
+      console.log("[ThreeScene] Rendering scene to WebGL canvas...", {
+        width: renderer.domElement.width,
+        height: renderer.domElement.height,
+        sceneChildren: scene.children.length
+      });
       renderer.render(scene, camera);
     };
 
@@ -246,14 +252,27 @@ export function useThreeScene(
         lastFrameTimeRef.current == null ? null : (now - lastFrameTimeRef.current) / 1000;
       lastFrameTimeRef.current = now;
 
-      const hadInvalidation = needsRenderRef.current;
+      const hadInvalidation = needsRenderRef.current || invalidationsRemainingRef.current > 0;
       needsRenderRef.current = false;
+
+      if (invalidationsRemainingRef.current > 0) {
+        invalidationsRemainingRef.current--;
+      }
+
       const controlsChanged = controls.update(deltaSeconds ?? undefined);
+      
+      console.log("[ThreeScene] renderFrame tick", {
+        hadInvalidation,
+        invalidationsRemaining: invalidationsRemainingRef.current,
+        controlsChanged,
+        continuousRender: continuousRenderRef.current
+      });
+
       if (continuousRenderRef.current || hadInvalidation || controlsChanged) {
         renderScene(deltaSeconds ?? undefined);
       }
 
-      if (continuousRenderRef.current || controlsChanged) {
+      if (continuousRenderRef.current || controlsChanged || invalidationsRemainingRef.current > 0) {
         requestFrame();
         return;
       }
@@ -262,6 +281,8 @@ export function useThreeScene(
     };
 
     const invalidate = () => {
+      console.log("[ThreeScene] invalidate() triggered");
+      invalidationsRemainingRef.current = 5; // Force rendering for the next 5 frames to ensure WebGL upload finishes
       needsRenderRef.current = true;
       requestFrame();
     };

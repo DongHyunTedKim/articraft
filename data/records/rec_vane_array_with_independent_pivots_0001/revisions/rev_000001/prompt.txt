@@ -1,1 +1,0 @@
-An adjustable louver-style mechanism composed of independent pivoting vanes, modeled with parallel shafts and neat mechanical spacing.

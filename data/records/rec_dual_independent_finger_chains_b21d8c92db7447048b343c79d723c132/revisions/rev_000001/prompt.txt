@@ -1,1 +1,0 @@
-A dual-finger gripper structure with two independent phalanx chains mounted to one palm block, using simple revolute joints and straight links.

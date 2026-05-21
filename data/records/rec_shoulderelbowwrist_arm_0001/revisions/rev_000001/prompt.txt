@@ -1,1 +1,0 @@
-A three-joint robotic arm with shoulder, elbow, and wrist hinges, built from machined housings, rectangular links, and a small tool flange.

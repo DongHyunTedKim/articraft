@@ -173,3 +173,25 @@ def test_gpt54_pricing_remains_unchanged() -> None:
     assert pricing["input_uncached"] == 2.50
     assert pricing["input_cached"] == 0.25
     assert pricing["output"] == 15.00
+
+
+def test_openrouter_pricing_with_provider_prefixes() -> None:
+    # Hyphen and Dot format for Claude Opus 4.7
+    pricing_hyphen = pricing_for_provider_model("openrouter", "anthropic/claude-opus-4-7")
+    pricing_dot = pricing_for_provider_model("openrouter", "anthropic/claude-opus-4.7")
+
+    expected_opus = {
+        "input_uncached": 5.00,
+        "input_cached": 0.00,
+        "output": 25.00,
+    }
+    assert pricing_hyphen == expected_opus
+    assert pricing_dot == expected_opus
+
+    # Sonnet 4.6 dot format
+    pricing_sonnet = pricing_for_provider_model("openrouter", "anthropic/claude-sonnet-4.6")
+    assert pricing_sonnet == {
+        "input_uncached": 3.00,
+        "input_cached": 0.00,
+        "output": 15.00,
+    }

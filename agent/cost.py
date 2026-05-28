@@ -63,6 +63,86 @@ OPENAI_GPT_5_5_PRICING: dict[str, float] = {
     "output_above_threshold": 45.00,
 }
 
+# ── OpenRouter pricing (verified via /api/v1/models, 2026-05-26) ──────────
+# OpenRouter reports cached=$0.00 for all models — cached tokens are not
+# billed separately; the effective savings are reflected in the blended
+# "Effective Pricing" dashboard instead.  Each constant uses input_cached=0.
+
+# --- OpenAI models via OpenRouter ---
+OPENROUTER_GPT_5_5_PRICING: dict[str, float] = {
+    "input_uncached": 5.00,
+    "input_cached": 0.00,
+    "output": 30.00,
+}
+
+OPENROUTER_GPT_5_4_PRICING: dict[str, float] = {
+    "input_uncached": 2.50,
+    "input_cached": 0.00,
+    "output": 15.00,
+}
+
+OPENROUTER_GPT_5_3_PRICING: dict[str, float] = {
+    "input_uncached": 1.75,
+    "input_cached": 0.00,
+    "output": 14.00,
+}
+
+OPENROUTER_GPT_5_2_PRICING: dict[str, float] = {
+    "input_uncached": 1.75,
+    "input_cached": 0.00,
+    "output": 14.00,
+}
+
+OPENROUTER_GPT_5_1_PRICING: dict[str, float] = {
+    "input_uncached": 1.25,
+    "input_cached": 0.00,
+    "output": 10.00,
+}
+
+OPENROUTER_GPT_5_PRICING: dict[str, float] = {
+    "input_uncached": 1.25,
+    "input_cached": 0.00,
+    "output": 10.00,
+}
+
+# --- Anthropic models via OpenRouter ---
+OPENROUTER_CLAUDE_OPUS_4_PRICING: dict[str, float] = {
+    "input_uncached": 5.00,
+    "input_cached": 0.00,
+    "output": 25.00,
+}
+
+OPENROUTER_CLAUDE_SONNET_4_PRICING: dict[str, float] = {
+    "input_uncached": 3.00,
+    "input_cached": 0.00,
+    "output": 15.00,
+}
+
+OPENROUTER_CLAUDE_HAIKU_4_5_PRICING: dict[str, float] = {
+    "input_uncached": 1.00,
+    "input_cached": 0.00,
+    "output": 5.00,
+}
+
+# --- Google models via OpenRouter ---
+OPENROUTER_GEMINI_3_PRO_PRICING: dict[str, float] = {
+    "input_uncached": 2.00,
+    "input_cached": 2.00,  # API reports $0 but actual billing uses Google's official cached rate
+    "output": 12.00,
+}
+
+OPENROUTER_GEMINI_3_5_FLASH_PRICING: dict[str, float] = {
+    "input_uncached": 1.50,
+    "input_cached": 0.15,  # API reports $0 but actual billing uses Google's official cached rate
+    "output": 9.00,
+}
+
+OPENROUTER_GEMINI_3_FLASH_PRICING: dict[str, float] = {
+    "input_uncached": 0.50,
+    "input_cached": 0.05,  # API reports $0 but actual billing uses Google's official cached rate
+    "output": 3.00,
+}
+
 ANTHROPIC_OPUS_4_7_PRICING: dict[str, float] = {
     "input_uncached": 5.00,
     "input_cached": 0.50,
@@ -350,24 +430,99 @@ def is_gpt_5_5_model(model_id: str) -> bool:
 
 
 def is_claude_opus_4_7_model(model_id: str) -> bool:
-    return model_id.strip().lower().startswith("claude-opus-4-7")
+    normalized = model_id.strip().lower()
+    return normalized.startswith(("claude-opus-4-7", "claude-opus-4.7"))
 
 
 def is_claude_opus_4_6_model(model_id: str) -> bool:
-    return model_id.strip().lower().startswith("claude-opus-4-6")
+    normalized = model_id.strip().lower()
+    return normalized.startswith(("claude-opus-4-6", "claude-opus-4.6"))
 
 
 def is_claude_opus_4_5_model(model_id: str) -> bool:
-    return model_id.strip().lower().startswith("claude-opus-4-5")
+    normalized = model_id.strip().lower()
+    return normalized.startswith(("claude-opus-4-5", "claude-opus-4.5"))
 
 
 def is_claude_sonnet_4_model(model_id: str) -> bool:
     normalized = model_id.strip().lower()
-    return normalized.startswith(("claude-sonnet-4-6", "claude-sonnet-4-5", "claude-sonnet-4"))
+    return normalized.startswith(
+        (
+            "claude-sonnet-4-6",
+            "claude-sonnet-4.6",
+            "claude-sonnet-4-5",
+            "claude-sonnet-4.5",
+            "claude-sonnet-4",
+        )
+    )
 
 
 def is_claude_haiku_4_5_model(model_id: str) -> bool:
-    return model_id.strip().lower().startswith("claude-haiku-4-5")
+    normalized = model_id.strip().lower()
+    return normalized.startswith(("claude-haiku-4-5", "claude-haiku-4.5"))
+
+
+def is_gpt_5_1_model(model_id: str) -> bool:
+    return model_id.strip().lower().startswith("gpt-5.1")
+
+
+def is_gpt_5_model(model_id: str) -> bool:
+    """Match bare ``gpt-5`` but NOT ``gpt-5.1``, ``gpt-5.2``, etc."""
+    normalized = model_id.strip().lower()
+    return normalized.startswith("gpt-5") and not normalized.startswith(("gpt-5.",))
+
+
+def _strip_openrouter_prefix(model_id: str) -> str:
+    """Strip provider prefix from OpenRouter-style model IDs.
+
+    Examples:
+        ``openai/gpt-5.5`` → ``gpt-5.5``
+        ``anthropic/claude-opus-4-7`` → ``claude-opus-4-7``
+        ``google/gemini-3-flash`` → ``gemini-3-flash``
+    """
+    if "/" in model_id:
+        return model_id.split("/", 1)[1]
+    return model_id
+
+
+def _match_model_pricing(model_id: str, *, openrouter: bool = False) -> dict[str, float] | None:
+    """Match a bare model ID against all known pricing tables.
+
+    When *openrouter* is True, prefer OpenRouter-specific flat-rate pricing
+    tables where available (no above-threshold surcharges).
+    """
+    # --- Anthropic ---
+    if is_claude_opus_4_7_model(model_id):
+        return OPENROUTER_CLAUDE_OPUS_4_PRICING if openrouter else ANTHROPIC_OPUS_4_7_PRICING
+    if is_claude_opus_4_6_model(model_id):
+        return OPENROUTER_CLAUDE_OPUS_4_PRICING if openrouter else ANTHROPIC_OPUS_4_6_PRICING
+    if is_claude_opus_4_5_model(model_id):
+        return OPENROUTER_CLAUDE_OPUS_4_PRICING if openrouter else ANTHROPIC_OPUS_4_5_PRICING
+    if is_claude_sonnet_4_model(model_id):
+        return OPENROUTER_CLAUDE_SONNET_4_PRICING if openrouter else ANTHROPIC_SONNET_4_PRICING
+    if is_claude_haiku_4_5_model(model_id):
+        return OPENROUTER_CLAUDE_HAIKU_4_5_PRICING if openrouter else ANTHROPIC_HAIKU_4_5_PRICING
+    # --- Gemini ---
+    if is_gemini_3_5_flash_model(model_id):
+        return OPENROUTER_GEMINI_3_5_FLASH_PRICING if openrouter else GEMINI_3_5_FLASH_PRICING
+    if is_flash_model(model_id):
+        return OPENROUTER_GEMINI_3_FLASH_PRICING if openrouter else GEMINI_FLASH_PRICING
+    if is_gemini_3_pro_model(model_id):
+        return OPENROUTER_GEMINI_3_PRO_PRICING if openrouter else GEMINI_3_PRO_PRICING
+    # --- OpenAI (most specific first) ---
+    if is_gpt_5_5_model(model_id):
+        return OPENROUTER_GPT_5_5_PRICING if openrouter else OPENAI_GPT_5_5_PRICING
+    if is_gpt_5_4_model(model_id):
+        return OPENROUTER_GPT_5_4_PRICING if openrouter else OPENAI_GPT_5_4_PRICING
+    if is_gpt_5_3_codex_model(model_id):
+        return OPENROUTER_GPT_5_3_PRICING if openrouter else OPENAI_GPT_5_3_CODEX_PRICING
+    if is_gpt_5_2_model(model_id):
+        return OPENROUTER_GPT_5_2_PRICING if openrouter else OPENAI_GPT_5_2_PRICING
+    if is_gpt_5_1_model(model_id):
+        return OPENROUTER_GPT_5_1_PRICING if openrouter else OPENAI_GPT_5_3_CODEX_PRICING
+    if is_gpt_5_model(model_id):
+        return OPENROUTER_GPT_5_PRICING if openrouter else OPENAI_GPT_5_3_CODEX_PRICING
+    return None
 
 
 def pricing_for_provider_model(provider: str, model_id: str) -> dict[str, float] | None:
@@ -377,6 +532,11 @@ def pricing_for_provider_model(provider: str, model_id: str) -> dict[str, float]
         provider_norm = normalize_provider_name(provider)
     except ValueError:
         return None
+    if provider_norm is ProviderName.OPENROUTER:
+        # OpenRouter model IDs carry a provider prefix (e.g. "openai/gpt-5.5").
+        # Strip it and match against the underlying model's pricing table.
+        base_model = _strip_openrouter_prefix(model_id)
+        return _match_model_pricing(base_model, openrouter=True)
     if provider_norm is ProviderName.ANTHROPIC and is_claude_opus_4_7_model(model_id):
         return ANTHROPIC_OPUS_4_7_PRICING
     if provider_norm is ProviderName.ANTHROPIC and is_claude_opus_4_6_model(model_id):

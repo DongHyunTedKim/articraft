@@ -1,7 +1,3 @@
-{
-  "schema_version": 1,
-  "dataset_id": "ds_single_pitch_axis_module_b95e6df587714da6a3871f56be43d28a",
-  "record_id": "rec_single_pitch_axis_module_b95e6df587714da6a3871f56be43d28a",
-  "category_slug": "single_pitch_axis_module",
-  "promoted_at": "2026-04-29T08:38:10Z"
-}
+version https://git-lfs.github.com/spec/v1
+oid sha256:f9ea53369e9de8a56ae256bf4d7c7c9e766775cb48c7ecfb5eaa9435f3295b3c
+size 274

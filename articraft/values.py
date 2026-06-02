@@ -5,15 +5,19 @@ from enum import StrEnum
 
 class ProviderName(StrEnum):
     ANTHROPIC = "anthropic"
+    CODEX_CLI = "codex-cli"
+    DASHSCOPE = "dashscope"
     GEMINI = "gemini"
     OPENAI = "openai"
     OPENROUTER = "openrouter"
+    DEEPSEEK = "deepseek"
 
 
 class ThinkingLevel(StrEnum):
     LOW = "low"
     MED = "med"
     HIGH = "high"
+    XHIGH = "xhigh"
 
 
 PROVIDER_VALUES = tuple(provider.value for provider in ProviderName)
@@ -38,10 +42,16 @@ def infer_provider_from_model_id(model_id: str | None) -> ProviderName | None:
         return ProviderName.OPENAI
     if model_norm.startswith("claude-"):
         return ProviderName.ANTHROPIC
-    if model_norm.startswith("gemini-"):
-        return ProviderName.GEMINI
+    if model_norm.startswith(("codex-cli", "codex/")):
+        return ProviderName.CODEX_CLI
     if "/" in model_norm or model_norm.startswith("openrouter/"):
         return ProviderName.OPENROUTER
+    if model_norm.startswith("qwen"):
+        return ProviderName.DASHSCOPE
+    if model_norm.startswith("gemini-"):
+        return ProviderName.GEMINI
+    if model_norm.startswith("deepseek-"):
+        return ProviderName.DEEPSEEK
     return None
 
 

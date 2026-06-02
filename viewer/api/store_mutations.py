@@ -5,6 +5,7 @@ from typing import Any
 
 from storage.dataset_workflow import reconcile_category_metadata
 from storage.queries import StorageQueries
+from storage.records_index import remove_records_from_index, write_records_index
 from viewer.api.store_components import ViewerStoreComponent
 from viewer.api.store_values import _utc_now
 
@@ -13,6 +14,7 @@ class ViewerMutationStore(ViewerStoreComponent):
     def update_record_rating(self, record_id: str, rating: int | None) -> dict[str, Any] | None:
         updated = self.record_store.update_rating(record_id, rating)
         if isinstance(updated, dict):
+            write_records_index(self.repo)
             self.stats.invalidate_stats_cache()
         return updated if isinstance(updated, dict) else None
 
@@ -21,6 +23,7 @@ class ViewerMutationStore(ViewerStoreComponent):
     ) -> dict[str, Any] | None:
         updated = self.record_store.update_secondary_rating(record_id, secondary_rating)
         if isinstance(updated, dict):
+            write_records_index(self.repo)
             self.stats.invalidate_stats_cache()
         return updated if isinstance(updated, dict) else None
 
@@ -56,6 +59,7 @@ class ViewerMutationStore(ViewerStoreComponent):
                     sequence=None,
                 )
             self.dataset_store.write_dataset_manifest()
+            remove_records_from_index(self.repo, [record_id])
             self.search_index.rebuild()
             self.stats.invalidate_stats_cache()
         return deleted

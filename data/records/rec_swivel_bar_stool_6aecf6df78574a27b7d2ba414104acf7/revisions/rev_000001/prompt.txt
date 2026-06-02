@@ -1,1 +1,3 @@
-Build a precision professional Swivel bar stool tuned for calibration and repeatable alignment. Use a pedestal stool with seat stage on a central swivel interface with datum-friendly surfaces, index marks, adjustment features, and controlled gap language. Visual style can be minimal, but kinematics must be explicit. Seat swivel should be centered on a supported bearing stack. Keep a fully connected mechanical stack with no free-floating parts. No floating parts.
+version https://git-lfs.github.com/spec/v1
+oid sha256:ab227df245ddd8d33865608d77fd41239da3b6752657e55cdb0d56117f1ccdd8
+size 466

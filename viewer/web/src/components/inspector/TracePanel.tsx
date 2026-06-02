@@ -1,6 +1,7 @@
-import { lazy, Suspense, useMemo, useState, type JSX } from "react";
+import { Suspense, useMemo, useState, type JSX } from "react";
 import { Maximize2 } from "lucide-react";
 
+import { lazyWithChunkReload } from "@/lib/lazy";
 import type { RecordSummary } from "@/lib/types";
 import {
   asRecord,
@@ -10,7 +11,7 @@ import {
   parseEnrichedTurns,
 } from "./trajectory-types";
 
-const TrajectoryInspectorModal = lazy(() =>
+const TrajectoryInspectorModal = lazyWithChunkReload(() =>
   import("./TrajectoryInspectorModal").then((module) => ({
     default: module.TrajectoryInspectorModal,
   })),
@@ -55,7 +56,7 @@ export function TracePanel({ cost, traceText, record = null }: TracePanelProps):
         ? String(record.turn_count)
         : "--";
 
-  const hasTrajectory = Boolean(cost || traceText);
+  const hasTrajectory = Boolean(traceText?.trim());
 
   return (
     <section>

@@ -13,7 +13,7 @@ from agent.prompts import normalize_sdk_package
 from agent.runner import run_from_input
 from agent.tools import build_initial_user_content, resolve_image_path
 from articraft.values import PROVIDER_VALUES, THINKING_LEVEL_VALUES
-from cli.common import add_data_root_argument, warn_if_post_commit_hook_missing
+from cli.common import add_data_root_argument
 from storage.categories import CategoryStore
 from storage.collections import CollectionStore
 from storage.data_validation import validate_data_format
@@ -43,10 +43,11 @@ from storage.dataset_workflow import (
 )
 from storage.datasets import DatasetStore
 from storage.identifiers import validate_category_slug, validate_supercategory_slug
+from storage.lfs import hydrate_records, lfs_status, select_records_for_hydration
 from storage.models import CategoryRecord, SupercategoryEntry
 from storage.queries import StorageQueries
-from storage.record_authors import sync_record_authors, sync_record_rated_by
 from storage.records import RecordStore
+from storage.records_index import remove_records_from_index, write_records_index
 from storage.repo import StorageRepo
 from storage.search import SearchIndex
 from storage.supercategories import SupercategoryStore
@@ -337,6 +338,7 @@ def _run_single_category_workflow(
     category = CategoryStore(repo).load(normalized_category_slug)
     if not isinstance(category, dict):
         raise ValueError(f"Generated category missing for {normalized_category_slug}")
+    write_records_index(repo)
     search_stats = SearchIndex(repo).rebuild()
     return resolved_record_id, resolved_dataset_id, category, search_stats
 
@@ -547,6 +549,7 @@ def _delete_category(
         records.delete_record(record_id)
 
     categories.delete(preview.category_slug)
+    remove_records_from_index(repo, preview.record_ids)
     manifest = datasets.write_dataset_manifest()
     search_stats = SearchIndex(repo).rebuild()
     return manifest, search_stats
@@ -581,6 +584,7 @@ def _delete_record(
             sequence=None,
         )
     manifest = datasets.write_dataset_manifest()
+    remove_records_from_index(repo, [preview.record_id])
     search_stats = SearchIndex(repo).rebuild()
     return manifest, search_stats
 
@@ -833,17 +837,40 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Exact record ID confirmation required when --execute is set.",
     )
     subparsers.add_parser("validate", help="Validate record-local dataset entries.")
-    subparsers.add_parser(
+    validate_format = subparsers.add_parser(
         "validate-format",
         help="Validate canonical checked-in data structure.",
     )
+    validate_format.add_argument(
+        "--require-records",
+        action="store_true",
+        help="Require all indexed records to be hydrated.",
+    )
+    validate_format.add_argument(
+        "--record",
+        dest="records",
+        action="append",
+        default=[],
+        help="Require and validate one selected record. Repeatable.",
+    )
+    hydrate = subparsers.add_parser(
+        "hydrate",
+        help="Hydrate LFS-backed record payloads by ID, category, time range, or file.",
+    )
+    hydrate.add_argument("--record", dest="records", action="append", default=[])
+    hydrate.add_argument("--category", default=None)
+    hydrate.add_argument("--time-from", default=None)
+    hydrate.add_argument("--time-to", default=None)
+    hydrate.add_argument("--last", default=None)
+    hydrate.add_argument("--all", action="store_true", dest="all_records")
+    hydrate.add_argument("--from-file", type=Path, default=None)
     subparsers.add_parser(
-        "sync-authors",
-        help="Populate record.json author fields from the git author that added each record's model.py.",
+        "lfs-status",
+        help="Show record payload hydration status from the normal-Git records index.",
     )
     subparsers.add_parser(
-        "sync-rated-by",
-        help="Populate record.json rated_by fields from the git author that last edited the rating line.",
+        "build-record-index",
+        help="Build data/records_index.jsonl from hydrated record payloads.",
     )
     subparsers.add_parser(
         "build-manifest", help="Build the derived dataset manifest under data/cache/manifests/."
@@ -1036,7 +1063,6 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "run-single":
         repo.ensure_layout()
-        warn_if_post_commit_hook_missing(args.repo_root)
         try:
             sdk_package = normalize_sdk_package(args.sdk_package)
             max_cost_usd = (
@@ -1380,7 +1406,11 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.command == "validate-format":
-        result = validate_data_format(repo)
+        result = validate_data_format(
+            repo,
+            require_records=bool(args.require_records),
+            record_ids=list(args.records or []),
+        )
         if result.errors:
             for error in result.errors:
                 print(error)
@@ -1389,68 +1419,54 @@ def main(argv: list[str] | None = None) -> int:
             "Data format valid: "
             f"categories={result.category_count} "
             f"batch_specs={result.batch_spec_count} "
+            f"record_index={result.records_index_count} "
             f"records={result.record_count} "
             f"dataset_entries={result.dataset_entry_count} "
-            f"skipped_local_records={result.skipped_local_record_count}"
+            f"skipped_local_records={result.skipped_local_record_count} "
+            f"skipped_unhydrated_records={result.skipped_unhydrated_record_count}"
         )
         return 0
 
-    if args.command == "sync-authors":
-        repo.ensure_layout()
+    if args.command == "hydrate":
         try:
-            summary = sync_record_authors(repo)
-        except RuntimeError as exc:
-            print(f"Failed to sync record authors: {exc}")
+            selection = select_records_for_hydration(
+                repo,
+                record_ids=list(args.records or []),
+                category=args.category,
+                time_from=args.time_from,
+                time_to=args.time_to,
+                last=args.last,
+                all_records=bool(args.all_records),
+                from_file=args.from_file,
+            )
+            if not selection.record_ids:
+                print(f"No records selected for hydration ({selection.reason}).")
+                return 0
+            result = hydrate_records(repo, selection.record_ids)
+        except (ValueError, RuntimeError) as exc:
+            print(str(exc))
             return 1
         print(
-            "Synced record authors "
-            f"scanned={summary.scanned} "
-            f"updated={len(summary.updated_record_ids)} "
-            f"already_set={len(summary.already_set_record_ids)} "
-            f"missing_record={len(summary.missing_record_ids)} "
-            f"missing_model={len(summary.missing_model_record_ids)} "
-            f"missing_git_author={len(summary.missing_git_author_record_ids)}"
+            f"Hydrated records={result.hydrated_count} "
+            f"selection={selection.reason} "
+            f"commands={len(result.commands)}"
         )
-        if summary.updated_record_ids:
-            print(f"sample_updated_record_ids={', '.join(summary.updated_record_ids[:10])}")
-        else:
-            print("sample_updated_record_ids=(none)")
-        if summary.missing_git_author_record_ids:
-            print(
-                "sample_missing_git_author_record_ids="
-                f"{', '.join(summary.missing_git_author_record_ids[:10])}"
-            )
-        else:
-            print("sample_missing_git_author_record_ids=(none)")
         return 0
 
-    if args.command == "sync-rated-by":
-        repo.ensure_layout()
-        try:
-            summary = sync_record_rated_by(repo)
-        except RuntimeError as exc:
-            print(f"Failed to sync record rated_by fields: {exc}")
-            return 1
+    if args.command == "lfs-status":
+        status = lfs_status(repo)
         print(
-            "Synced record rated_by "
-            f"scanned={summary.scanned} "
-            f"updated={len(summary.updated_record_ids)} "
-            f"unchanged={len(summary.unchanged_record_ids)} "
-            f"missing_record={len(summary.missing_record_ids)} "
-            f"missing_rating_line={len(summary.missing_rating_line_record_ids)} "
-            f"missing_git_author={len(summary.missing_git_author_record_ids)}"
+            "Record LFS status: "
+            f"indexed={status.indexed_count} "
+            f"hydrated={status.hydrated_count} "
+            f"unhydrated={status.unhydrated_count} "
+            f"missing={status.missing_count}"
         )
-        if summary.updated_record_ids:
-            print(f"sample_updated_record_ids={', '.join(summary.updated_record_ids[:10])}")
-        else:
-            print("sample_updated_record_ids=(none)")
-        if summary.missing_git_author_record_ids:
-            print(
-                "sample_missing_git_author_record_ids="
-                f"{', '.join(summary.missing_git_author_record_ids[:10])}"
-            )
-        else:
-            print("sample_missing_git_author_record_ids=(none)")
+        return 0
+
+    if args.command == "build-record-index":
+        rows = write_records_index(repo)
+        print(f"Wrote {repo.layout.records_index_path} records={len(rows)}")
         return 0
 
     if args.command == "build-manifest":
@@ -1476,7 +1492,6 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "run-batch":
         from agent.batch_runner import build_batch_config, keep_system_awake, run_dataset_batch
 
-        warn_if_post_commit_hook_missing(args.repo_root)
         try:
             config = build_batch_config(
                 repo_root=args.repo_root,
@@ -1500,6 +1515,7 @@ def main(argv: list[str] | None = None) -> int:
 
         with keep_system_awake(config.keep_awake):
             summary = asyncio.run(run_dataset_batch(config))
+        write_records_index(repo)
         print(
             f"Batch run_id={summary['run_id']} status={summary['status']} "
             f"successes={summary['success_count']} failures={summary['failed_count']}"

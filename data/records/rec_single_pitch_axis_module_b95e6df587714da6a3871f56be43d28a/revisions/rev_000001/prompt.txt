@@ -1,1 +1,3 @@
-Create a realistic adjustable panel tilt mount. Geometry/details required: fixed base, two side cheeks, tilting rectangular panel, axle pins, washers, and stop tabs. Articulation required: one horizontal revolute pitch joint with limited tilt. Keep the design intentionally simple and robust: one primary moving joint, a clearly fixed base or frame, and every moving link visibly supported. Use believable proportions, clear colors/materials, chamfered or rounded edges, and exact prompt-specific tests for the mechanism, support/contact, closed pose, open/extended pose, and the most important visible details. Keep the URDF open-tree; if small seated or nested overlaps are visually valid, use scoped overlap allowances with exact proof checks rather than distorting the geometry.
+version https://git-lfs.github.com/spec/v1
+oid sha256:24b8f0e0c6e11848da0e9a2581e48dce27145e8d7ee1c4215c4c9bfee65bda94
+size 782

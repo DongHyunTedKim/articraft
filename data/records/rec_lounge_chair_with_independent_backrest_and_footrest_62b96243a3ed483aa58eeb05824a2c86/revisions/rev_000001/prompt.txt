@@ -1,1 +1,3 @@
-A modern lounge chair with a low seat, a floating backrest, and a short pop-up footrest panel. The fixed seat base supports the backrest from side pivots near the rear corners, and the footrest panel lifts from a recess below the seat front on its own bracket. The backrest rotates on a rear horizontal pivot axis, and the footrest rotates independently on its own horizontal hinge axis beneath the seat front. Keep the pop-up footrest panel clipped to its bracket under the seat front so it stays attached during deployment.
+version https://git-lfs.github.com/spec/v1
+oid sha256:eb59a34b668e9a05ff1393df16c260ef96ca564a8358bfb3ccbb1061fe5b3d63
+size 525

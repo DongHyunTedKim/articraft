@@ -29,6 +29,9 @@ from agent.prompts import (
 )
 from agent.providers.anthropic import AnthropicLLM
 from agent.providers.base import ProviderClient
+from agent.providers.codex_cli import CodexCliLLM
+from agent.providers.dashscope import DashScopeLLM
+from agent.providers.deepseek import DeepSeekLLM
 from agent.providers.factory import (
     ProviderConfig,
     ProviderConstructors,
@@ -57,6 +60,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 CONSOLE = Console()
 _FIND_EXAMPLES_SKIPPED_CONTENT = "{Skipped: full content already returned earlier in this run.}"
+MAX_CONSECUTIVE_NO_ACTION_TURNS = 3
 
 
 def _minimal_scaffold_text(
@@ -221,6 +225,7 @@ class ArticraftAgent:
         )
         self.guidance_injector = GuidanceInjector(
             file_path=self.file_path,
+            provider=self.provider,
             trace_writer=self.trace_writer,
             tool_call_name=self.message_codec.tool_call_name,
         )
@@ -234,6 +239,9 @@ class ArticraftAgent:
             ),
             constructors=ProviderConstructors(
                 anthropic=AnthropicLLM,
+                codex_cli=CodexCliLLM,
+                dashscope=DashScopeLLM,
+                deepseek=DeepSeekLLM,
                 gemini=GeminiLLM,
                 openai=OpenAILLM,
                 openrouter=OpenRouterLLM,
@@ -354,6 +362,7 @@ class ArticraftAgent:
 
         injector = GuidanceInjector(
             file_path=str(getattr(self, "file_path", "")),
+            provider=str(getattr(self, "provider", "")),
             trace_writer=getattr(self, "trace_writer", None),
             tool_call_name=self._tool_call_name,
         )
@@ -366,6 +375,16 @@ class ArticraftAgent:
         injector._seen_baseline_qc_guidance_sigs = getattr(
             self,
             "_seen_baseline_qc_guidance_sigs",
+            set(),
+        )
+        injector._seen_compile_repair_guidance_sigs = getattr(
+            self,
+            "_seen_compile_repair_guidance_sigs",
+            set(),
+        )
+        injector._seen_api_error_guidance_sigs = getattr(
+            self,
+            "_seen_api_error_guidance_sigs",
             set(),
         )
         self.guidance_injector = injector
@@ -390,6 +409,20 @@ class ArticraftAgent:
             conversation,
             trace_writer=self.trace_writer,
         )
+
+    def _append_final_response_required_reminder(self, conversation: list[dict]) -> None:
+        msg = {
+            "role": "user",
+            "content": (
+                "<final_response_required>\n"
+                "The latest code has already compiled successfully.\n"
+                "Return a visible final response, or call a tool if further work is needed.\n"
+                "</final_response_required>"
+            ),
+        }
+        conversation.append(msg)
+        if self.trace_writer:
+            self.trace_writer.write_message(msg)
 
     def _scan_current_code_contracts(self):
         return self._ensure_guidance_injector()._scan_current_code_contracts()
@@ -424,6 +457,32 @@ class ArticraftAgent:
         tool_results: list[ToolResult],
     ) -> None:
         self._ensure_guidance_injector().maybe_inject_code_contract_guidance(
+            conversation,
+            tool_calls=tool_calls,
+            tool_results=tool_results,
+        )
+
+    def _maybe_inject_compile_repair_guidance(
+        self,
+        conversation: list[dict],
+        *,
+        tool_calls: list[dict],
+        tool_results: list[ToolResult],
+    ) -> None:
+        self._ensure_guidance_injector().maybe_inject_compile_repair_guidance(
+            conversation,
+            tool_calls=tool_calls,
+            tool_results=tool_results,
+        )
+
+    def _maybe_inject_api_error_guidance(
+        self,
+        conversation: list[dict],
+        *,
+        tool_calls: list[dict],
+        tool_results: list[ToolResult],
+    ) -> None:
+        self._ensure_guidance_injector().maybe_inject_api_error_guidance(
             conversation,
             tool_calls=tool_calls,
             tool_results=tool_results,
@@ -601,6 +660,37 @@ class ArticraftAgent:
 
     def _build_assistant_message(self, message: dict) -> dict:
         return self._ensure_message_codec().build_assistant_message(message)
+
+    def _extract_provider_diagnostics(self, message: dict) -> dict[str, Any] | None:
+        if not isinstance(message, dict):
+            return None
+        diagnostics = message.get("provider_diagnostics")
+        return diagnostics if isinstance(diagnostics, dict) and diagnostics else None
+
+    def _trace_provider_diagnostics(self, diagnostics: dict[str, Any]) -> None:
+        if not self.trace_writer:
+            return
+        payload: dict[str, Any] = {
+            "provider": self.provider,
+            "diagnostics": diagnostics,
+        }
+        model_id = getattr(self.llm, "model_id", None)
+        if isinstance(model_id, str) and model_id:
+            payload["model_id"] = model_id
+        self.trace_writer.write_event("llm_response", payload)
+
+    def _format_provider_diagnostic_summary(self, diagnostics: dict[str, Any] | None) -> str:
+        if not isinstance(diagnostics, dict):
+            return ""
+        parts: list[str] = []
+        status = diagnostics.get("status")
+        if isinstance(status, str) and status:
+            parts.append(f"status={status}")
+        incomplete_details = diagnostics.get("incomplete_details")
+        reason = incomplete_details.get("reason") if isinstance(incomplete_details, dict) else None
+        if isinstance(reason, str) and reason:
+            parts.append(f"reason={reason}")
+        return " ".join(parts)
 
     def _tool_call_name(self, tool_call: dict) -> str:
         return self._ensure_message_codec().tool_call_name(tool_call)
@@ -1050,6 +1140,8 @@ class ArticraftAgent:
         completed_turns = 0
         llm_calls = 0
         tool_call_count = 0
+        consecutive_no_action_turns = 0
+        last_provider_diagnostics: dict[str, Any] | None = None
 
         while completed_turns < self.max_turns:
             turn = completed_turns + 1
@@ -1180,6 +1272,11 @@ class ArticraftAgent:
             for key, value in usage.items():
                 usage_totals[key] = usage_totals.get(key, 0) + value
 
+            provider_diagnostics = self._extract_provider_diagnostics(response)
+            if provider_diagnostics:
+                last_provider_diagnostics = provider_diagnostics
+                self._trace_provider_diagnostics(provider_diagnostics)
+
             assistant_message = self._build_assistant_message(response)
             has_assistant_payload = any(
                 key in assistant_message
@@ -1242,21 +1339,50 @@ class ArticraftAgent:
             if isinstance(thinking, str) and thinking.strip():
                 self.display.add_thinking_summary(thinking)
 
-            is_empty_response = not tool_calls and not text.strip()
-            if is_empty_response:
-                finish_result = await self._handle_finish_attempt(
-                    conversation,
-                    message="Compile succeeded and model returned no further actions",
-                    turn_count=completed_turns,
-                    tool_call_count=tool_call_count,
-                    usage=usage_totals,
-                    display_turn_override=completed_turns,
-                )
-                if finish_result is not None:
-                    logger.info("Empty response after fresh compile; terminating run.")
-                    return finish_result
+            is_no_action_response = not tool_calls and not text.strip()
+            if is_no_action_response:
+                completed_turns += 1
+                consecutive_no_action_turns += 1
+                if consecutive_no_action_turns >= MAX_CONSECUTIVE_NO_ACTION_TURNS:
+                    message = (
+                        "LLM produced "
+                        f"{consecutive_no_action_turns} consecutive no-action responses "
+                        "(no visible text and no tool calls). Aborting early to avoid "
+                        "burning turns."
+                    )
+                    diagnostic_summary = self._format_provider_diagnostic_summary(
+                        last_provider_diagnostics
+                    )
+                    if diagnostic_summary:
+                        message = f"{message} Last provider response: {diagnostic_summary}."
+                    logger.warning(message)
+                    self._persist_cost_tracking()
+                    self.display.end_turn(success=False, error=message)
+                    return AgentResult(
+                        success=False,
+                        reason=TerminateReason.ERROR,
+                        message=message,
+                        conversation=conversation,
+                        compile_warnings=self._compile_warnings_snapshot(),
+                        turn_count=completed_turns,
+                        tool_call_count=tool_call_count,
+                        compile_attempt_count=(
+                            self._ensure_compile_feedback().compile_attempt_count
+                        ),
+                        usage=usage_totals or None,
+                    )
+                if self._latest_code_is_fresh():
+                    logger.info(
+                        "No-action response after fresh compile; requesting visible final response."
+                    )
+                    self._append_final_response_required_reminder(conversation)
+                else:
+                    logger.info("No-action response before fresh compile; requesting compile.")
+                    self._append_compile_required_reminder(conversation)
+                self.display.end_turn(success=True)
                 continue
 
+            consecutive_no_action_turns = 0
             completed_turns += 1
 
             termination_message = self._termination_message(text, tool_calls)
@@ -1303,6 +1429,16 @@ class ArticraftAgent:
                     logger.warning("Tool %s failed: %s", func_name, result.error)
 
             self._maybe_inject_edit_code_guidance(
+                conversation,
+                tool_calls=tool_calls,
+                tool_results=turn_tool_results,
+            )
+            self._maybe_inject_compile_repair_guidance(
+                conversation,
+                tool_calls=tool_calls,
+                tool_results=turn_tool_results,
+            )
+            self._maybe_inject_api_error_guidance(
                 conversation,
                 tool_calls=tool_calls,
                 tool_results=turn_tool_results,

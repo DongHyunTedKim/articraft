@@ -33,6 +33,10 @@ class StorageLayout:
         return self.data_root / "records"
 
     @property
+    def records_index_path(self) -> Path:
+        return self.data_root / "records_index.jsonl"
+
+    @property
     def cache_root(self) -> Path:
         return self.data_root / "cache"
 

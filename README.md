@@ -22,6 +22,7 @@ Articraft transforms the creation of articulated 3D assets into a programmatic, 
 - Python 3.12 recommended (or 3.11). *Note: 3.13+ is not currently supported.*
 - [`uv`](https://docs.astral.sh/uv/) for incredibly fast Python package management.
 - [`just`](https://github.com/casey/just) as the command runner.
+- [`Git LFS`](https://git-lfs.com/) for hydrating dataset records on demand.
 - [`npm`](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm) (optional, but needed for local viewer frontend).
 
 ### 2. Setup
@@ -29,11 +30,25 @@ From the repo root, run:
 ```bash
 just setup
 ```
+To set up a checkout from another working directory, pass the repository root:
+```bash
+just setup ./path/to/checkout
+```
+
+Fresh clones are code-first: `data/records/**` is stored with Git LFS and excluded from automatic LFS fetch by `.lfsconfig`, so it does not need to be hydrated before developing the code or browsing indexed metadata. Hydrate records only when you want to inspect, render, or edit their payloads:
+
+```bash
+uv run articraft data hydrate --record <record_id>
+uv run articraft data hydrate --category <category_slug>
+uv run articraft data hydrate --time-from 2026-04-01 --time-to 2026-04-07
+uv run articraft data hydrate --last 7d
+uv run articraft data hydrate --all
+```
 
 ### 3. Add API Keys
-Open `.env` and set one or more provider keys (e.g. `OPENAI_API_KEY`, `GEMINI_API_KEYS`, `ANTHROPIC_API_KEYS`).
+Open `.env` and set one or more provider keys (e.g. `OPENAI_API_KEY`, `GEMINI_API_KEYS`, `ANTHROPIC_API_KEYS`, `DASHSCOPE_API_KEY`).
 
-> **No API Keys?** No problem! If you don't have API keys set up, you can use external AI agents like Claude Code, Codex, or Cursor. Just point them to this repository and prompt them:
+> **No API Keys?** No problem. You can use external AI agents like Claude Code, Codex, or Cursor instead. For Codex setup, including how to add the Codex plugin, see [Codex Plugin Setup](docs/codex_plugin.md). Then point the agent at this repository and prompt it:
 > 
 > *"Create a realistic articulated [object name] and add it to the Articraft dataset. Follow EXTERNAL_AGENT_DATA.md."*
 
@@ -44,16 +59,20 @@ Generate your first model directly from a prompt using `articraft generate`:
 uv run articraft generate "Create a realistic articulated desk lamp with a weighted base, two hinged arms, and an adjustable lamp head."
 ```
 
-If you specify no overrides, it defaults to `--model gpt-5.5-2026-04-23 --thinking-level high`. You can change models and caps:
+If you specify no overrides, it uses `ARTICRAFT_MODEL` and `ARTICRAFT_THINKING_LEVEL` from `.env` when present, otherwise `--model gpt-5.5-2026-04-23 --thinking-level high`. You can change models and caps:
 ```bash
-uv run articraft generate --model gemini-3-flash-preview --max-cost-usd 1.5 "Create a compact desk fan with adjustable tilt."
+uv run articraft generate --max-cost-usd 1.5 "Create a compact desk fan with adjustable tilt."
 ```
+
+To generate from a reference image, see [Image-Conditioned Generation](docs/image_conditioned_generation.md).
 
 ### 5. Open the Viewer
 Browse the objects you just generated. The local viewer API and React frontend can be started with:
 ```bash
 just viewer
 ```
+
+The viewer can browse/search the dataset from `data/records_index.jsonl` before record payloads are hydrated. When you select an unhydrated record, use the "Hydrate record" action before opening source files, traces, or rendered assets.
 
 ### 6. Edit an Existing Asset
 Fork an existing record when you want to modify it:
@@ -79,7 +98,10 @@ By contributing data to the Articraft project, you acknowledge and agree that yo
 ## Documentation & Advanced Usage
 
 - **[Architecture & Project Structure](docs/architecture.md)**
+- **[Qwen / DashScope Quickstart](docs/qwen_dashscope_quickstart.md)**
+- **[Codex Plugin Setup](docs/codex_plugin.md)**
 - **[Editing Existing Records](docs/record_editing.md)**
+- **[Image-Conditioned Generation](docs/image_conditioned_generation.md)**
 - **[Dataset Generation & Batch Processing](docs/dataset_generation.md)**
 - **[Contributing Standards & Workflow](CONTRIBUTING.md)**
 - **[Security Policy](SECURITY.md)**

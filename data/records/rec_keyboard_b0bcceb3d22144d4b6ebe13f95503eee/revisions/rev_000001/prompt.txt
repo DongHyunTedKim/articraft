@@ -1,1 +1,3 @@
-An Alice-style ergonomic keyboard with a split main key field in one continuous case. The housing has a central notch and two inward-canted key clusters, with two folding tent feet under the back corners. The keys move as short vertical prismatic plungers, and the tent feet rotate on small hinges under the rear corners.
+version https://git-lfs.github.com/spec/v1
+oid sha256:ea335cd9bfe8a32ab1f1bf8417d1b6d554212c30c6600b0165f4b0f8a31de9be
+size 321

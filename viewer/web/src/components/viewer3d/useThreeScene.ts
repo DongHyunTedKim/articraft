@@ -150,7 +150,6 @@ export function useThreeScene(
   const continuousRenderRef = useRef(Boolean(options.continuousRender));
   const fancyGraphicsRef = useRef(Boolean(options.fancyGraphics));
   const needsRenderRef = useRef(false);
-  const invalidationsRemainingRef = useRef(0);
   const invalidateRef = useRef<() => void>(() => {});
 
   useEffect(() => {
@@ -247,20 +246,14 @@ export function useThreeScene(
         lastFrameTimeRef.current == null ? null : (now - lastFrameTimeRef.current) / 1000;
       lastFrameTimeRef.current = now;
 
-      const hadInvalidation = needsRenderRef.current || invalidationsRemainingRef.current > 0;
+      const hadInvalidation = needsRenderRef.current;
       needsRenderRef.current = false;
-
-      if (invalidationsRemainingRef.current > 0) {
-        invalidationsRemainingRef.current--;
-      }
-
       const controlsChanged = controls.update(deltaSeconds ?? undefined);
-
       if (continuousRenderRef.current || hadInvalidation || controlsChanged) {
         renderScene(deltaSeconds ?? undefined);
       }
 
-      if (continuousRenderRef.current || controlsChanged || invalidationsRemainingRef.current > 0) {
+      if (continuousRenderRef.current || controlsChanged) {
         requestFrame();
         return;
       }
@@ -269,15 +262,7 @@ export function useThreeScene(
     };
 
     const invalidate = () => {
-      invalidationsRemainingRef.current = 5; // Force rendering for the next 5 frames to ensure WebGL upload finishes
       needsRenderRef.current = true;
-
-      // Ensure synchronous render on invalidate to guarantee immediately visible pixels
-      // even if requestAnimationFrame loop is delayed or suspended by the browser.
-      if (renderer && scene && camera) {
-        renderer.render(scene, camera);
-      }
-
       requestFrame();
     };
 
@@ -334,9 +319,7 @@ export function useThreeScene(
       environmentMapRef.current = null;
       lastFrameTimeRef.current = null;
       needsRenderRef.current = false;
-      if (invalidateRef.current === invalidate) {
-        invalidateRef.current = () => {};
-      }
+      invalidateRef.current = () => {};
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 

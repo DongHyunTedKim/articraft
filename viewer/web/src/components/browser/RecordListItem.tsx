@@ -9,7 +9,7 @@ import {
   type MouseEvent as ReactMouseEvent,
 } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowUpRight, Check, ChevronDown, Copy, FolderOpen, GitFork, MoreVertical, Search, Star, Trash2 } from "lucide-react";
+import { ArrowUpRight, Check, ChevronDown, CloudDownload, Copy, FolderOpen, GitFork, MoreVertical, Search, Star, Trash2 } from "lucide-react";
 
 import {
   AlertDialog,
@@ -39,7 +39,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
-import { deleteRecord, openRecordFolder, promoteRecordToDataset } from "@/lib/api";
+import { deleteRecord, hydrateRecord, openRecordFolder, promoteRecordToDataset } from "@/lib/api";
 import { buildRecordPath, copyTextToClipboard } from "@/lib/record-path";
 import type { CategoryOption, RecordSummary } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -129,6 +129,7 @@ function RecordListItemInner({
   const [promoteOpen, setPromoteOpen] = useState(false);
   const [copyState, setCopyState] = useState<"idle" | "copied" | "error">("idle");
   const [openState, setOpenState] = useState<"idle" | "opened" | "error">("idle");
+  const [hydrateState, setHydrateState] = useState<"idle" | "hydrating" | "error">("idle");
   const [deletePending, setDeletePending] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [promotePending, setPromotePending] = useState(false);
@@ -151,8 +152,10 @@ function RecordListItemInner({
   const promoteCategoryLoadError =
     categoriesQuery.error instanceof Error ? categoriesQuery.error.message : null;
   const alreadyInDataset = record?.collections.includes("dataset") ?? false;
+  const needsHydration = record ? record.payload_status !== "hydrated" : false;
   const summaryText = truncateWithEllipsis(record?.prompt_preview || record?.title || recordId);
   const metadata = [
+    needsHydration ? "not hydrated" : null,
     record?.creator_mode === "external_agent"
       ? externalAgentLabel(record.external_agent)
       : null,
@@ -284,6 +287,21 @@ function RecordListItemInner({
       setOpenState("opened");
     } catch {
       setOpenState("error");
+    }
+  };
+
+  const handleHydrateRecord = async () => {
+    if (hydrateState === "hydrating") {
+      return;
+    }
+    setHydrateState("hydrating");
+    try {
+      await hydrateRecord(recordId);
+      setMenuOpen(false);
+      await queryClient.invalidateQueries({ queryKey: viewerQueryKeys.root() });
+      setHydrateState("idle");
+    } catch {
+      setHydrateState("error");
     }
   };
 
@@ -542,6 +560,24 @@ function RecordListItemInner({
                   <DropdownMenuItem onSelect={handlePromoteIntent}>
                     <ArrowUpRight className="size-3.5" />
                     <span>Promote to dataset</span>
+                  </DropdownMenuItem>
+                ) : null}
+                {needsHydration ? (
+                  <DropdownMenuItem
+                    disabled={hydrateState === "hydrating"}
+                    onSelect={(event) => {
+                      event.preventDefault();
+                      void handleHydrateRecord();
+                    }}
+                  >
+                    <CloudDownload className="size-3.5" />
+                    <span>
+                      {hydrateState === "hydrating"
+                        ? "Hydrating record"
+                        : hydrateState === "error"
+                          ? "Hydrate failed"
+                          : "Hydrate record"}
+                    </span>
                   </DropdownMenuItem>
                 ) : null}
                 <DropdownMenuItem onSelect={() => void handleCopyRecordPath()}>

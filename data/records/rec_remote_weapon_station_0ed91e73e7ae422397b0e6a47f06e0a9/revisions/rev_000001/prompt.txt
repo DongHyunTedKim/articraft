@@ -1,1 +1,3 @@
-A shielded remote weapon station with a gun cradle, an ammo box, and a compact optic head. The pedestal carries the azimuth stage, the weapon is mounted in a trunnion cradle between armor plates, and the optic head sits on a small side yoke. The pedestal rotates about a vertical azimuth axis, the weapon cradle rotates about a horizontal elevation axis, and the optic head rotates on its own local tilt axis in the side yoke. Keep the optic head clipped into its side yoke so the small sensor unit stays attached during tilt motion.
+version https://git-lfs.github.com/spec/v1
+oid sha256:e084d025a4e054ac0a6df0308c4e5038768f8b7cc707e74631c1c6b435985674
+size 533

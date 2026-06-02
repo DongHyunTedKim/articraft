@@ -13,7 +13,6 @@ import pytest
 from agent import runner
 from agent.defaults import DEFAULT_MAX_TURNS, GEMINI_3_FLASH_DEFAULT_MAX_TURNS
 from agent.run_context import RunExecutionOutcome
-from cli import hooks as git_hooks
 from cli import workbench as workbench_cli
 from cli.workbench import main as workbench_main
 from tests.helpers import FakeAgent
@@ -727,10 +726,8 @@ def test_workbench_init_record_command_persists_input_image(
     assert f"initialized record_id={record_dir.name}" in captured
 
 
-def test_workbench_init_record_warns_when_post_commit_hook_missing(tmp_path: Path) -> None:
+def test_workbench_init_record_does_not_warn_when_post_commit_hook_missing(tmp_path: Path) -> None:
     _init_git_repo(tmp_path)
-    git_hooks.install_post_commit_hook(tmp_path)
-    (tmp_path / ".git" / "hooks" / "post-commit").unlink()
 
     output = io.StringIO()
     with redirect_stdout(output):
@@ -749,20 +746,15 @@ def test_workbench_init_record_warns_when_post_commit_hook_missing(tmp_path: Pat
         )
 
     captured = output.getvalue()
-    assert "Warning: managed post-commit hook is missing" in captured
-    assert "just setup" in captured
-    assert "just hooks-install" in captured
-    assert "uv run articraft hooks install" in captured
+    assert "Warning: managed post-commit hook" not in captured
 
 
-def test_workbench_rerun_record_warns_when_post_commit_hook_missing(
+def test_workbench_rerun_record_does_not_warn_when_post_commit_hook_missing(
     fake_agent: None,
     tmp_path: Path,
 ) -> None:
     repo_root = tmp_path
     _init_git_repo(repo_root)
-    git_hooks.install_post_commit_hook(repo_root)
-    (repo_root / ".git" / "hooks" / "post-commit").unlink()
     exit_code = asyncio.run(
         runner.run_from_input(
             "make a cabinet hinge",
@@ -786,14 +778,13 @@ def test_workbench_rerun_record_warns_when_post_commit_hook_missing(
     with redirect_stdout(output):
         assert workbench_main(["--repo-root", str(repo_root), "rerun-record", str(record_dir)]) == 0
 
-    assert "Warning: managed post-commit hook is missing" in output.getvalue()
+    assert "Warning: managed post-commit hook" not in output.getvalue()
 
 
 def test_workbench_init_record_does_not_warn_when_post_commit_hook_installed(
     tmp_path: Path,
 ) -> None:
     _init_git_repo(tmp_path)
-    git_hooks.install_post_commit_hook(tmp_path)
 
     output = io.StringIO()
     with redirect_stdout(output):
@@ -819,8 +810,6 @@ def test_workbench_status_does_not_warn_when_post_commit_hook_missing(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     _init_git_repo(tmp_path)
-    git_hooks.install_post_commit_hook(tmp_path)
-    (tmp_path / ".git" / "hooks" / "post-commit").unlink()
 
     assert workbench_main(["--repo-root", str(tmp_path), "status"]) == 0
 

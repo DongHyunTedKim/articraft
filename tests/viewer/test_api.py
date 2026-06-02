@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from storage import dataset_workflow
@@ -23,6 +25,7 @@ from storage.records import RecordStore
 from storage.repo import StorageRepo
 from storage.runs import RunStore
 from viewer.api.app import create_app
+from viewer.api.frontend import install_frontend_routes
 from viewer.api.store import _effective_rating, _within_rating_filter
 
 
@@ -82,6 +85,31 @@ def test_effective_rating_filter_uses_bucket_ranges() -> None:
     assert _within_rating_filter(4.5, ["5"]) is False
 
 
+def test_frontend_missing_assets_do_not_fallback_to_index(tmp_path: Path) -> None:
+    dist_dir = tmp_path / "dist"
+    assets_dir = dist_dir / "assets"
+    assets_dir.mkdir(parents=True)
+    (dist_dir / "index.html").write_text("<html>viewer shell</html>", encoding="utf-8")
+    (assets_dir / "main.js").write_text("console.log('viewer');", encoding="utf-8")
+
+    app = FastAPI()
+    install_frontend_routes(app, dist_dir=dist_dir)
+    client = TestClient(app)
+
+    route_response = client.get("/viewer")
+    assert route_response.status_code == 200
+    assert route_response.text == "<html>viewer shell</html>"
+
+    asset_response = client.get("/assets/main.js")
+    assert asset_response.status_code == 200
+    assert asset_response.text == "console.log('viewer');"
+    assert asset_response.headers["cache-control"] == "public, max-age=31536000, immutable"
+
+    missing_asset_response = client.get("/assets/missing.js")
+    assert missing_asset_response.status_code == 404
+    assert "viewer shell" not in missing_asset_response.text
+
+
 def test_viewer_api_surfaces_external_creator_metadata(tmp_path: Path) -> None:
     repo = StorageRepo(tmp_path)
     repo.ensure_layout()
@@ -109,6 +137,15 @@ def test_viewer_api_surfaces_external_creator_metadata(tmp_path: Path) -> None:
         record_id="rec_external_001",
         added_at="2026-03-18T08:01:00Z",
     )
+    trace_dir = repo.layout.record_dir("rec_external_001") / "traces"
+    trace_dir.mkdir(parents=True, exist_ok=True)
+    (trace_dir / "trajectory.jsonl").write_text('{"message": "hidden"}\n', encoding="utf-8")
+    revision_trace_dir = repo.layout.record_revision_traces_dir("rec_external_001", "rev_000001")
+    revision_trace_dir.mkdir(parents=True, exist_ok=True)
+    (revision_trace_dir / "trajectory.jsonl").write_text(
+        '{"message": "hidden"}\n',
+        encoding="utf-8",
+    )
 
     client = TestClient(create_app(repo_root=tmp_path))
     response = client.get("/api/bootstrap")
@@ -121,6 +158,85 @@ def test_viewer_api_surfaces_external_creator_metadata(tmp_path: Path) -> None:
     assert external_record["has_traces"] is False
     assert external_record["provider"] == "openai"
     assert external_record["model_id"] == "gpt-5.5-2026-04-23"
+    assert client.get("/api/records/rec_external_001/traces/trajectory.jsonl").status_code == 404
+    assert (
+        client.get(
+            "/api/records/rec_external_001/revisions/rev_000001/traces/trajectory.jsonl"
+        ).status_code
+        == 404
+    )
+
+
+def test_viewer_api_infers_record_turn_count_from_cost_turns(tmp_path: Path) -> None:
+    repo = StorageRepo(tmp_path)
+    repo.ensure_layout()
+    _write_record(
+        repo,
+        record_id="rec_turns_001",
+        title="Turn counted record",
+        prompt="create a two turn object",
+        category_slug="hinges",
+        collections=["workbench", "dataset"],
+    )
+    CollectionStore(repo).append_workbench_entry(
+        record_id="rec_turns_001",
+        added_at="2026-03-18T08:01:00Z",
+    )
+    DatasetStore(repo).promote_record(
+        record_id="rec_turns_001",
+        dataset_id="dataset_turns_001",
+        promoted_at="2026-03-18T08:02:00Z",
+        category_slug="hinges",
+    )
+    record_dir = repo.layout.record_dir("rec_turns_001")
+    repo.write_json(
+        record_dir / "provenance.json",
+        {
+            "schema_version": 2,
+            "record_id": "rec_turns_001",
+            "generation": {
+                "provider": "openai",
+                "model_id": "gpt-5.4",
+                "thinking_level": "high",
+            },
+            "run_summary": {"final_status": "success"},
+        },
+    )
+    repo.write_json(
+        record_dir / "cost.json",
+        {
+            "turns": [
+                {"costs_usd": {"total": 0.01}},
+                {"costs_usd": {"total": 0.02}},
+            ],
+            "total": {
+                "costs_usd": {"total": 0.03},
+                "tokens": {"prompt_tokens": 100, "candidates_tokens": 50},
+            },
+        },
+    )
+    trace_dir = record_dir / "traces"
+    trace_dir.mkdir(parents=True, exist_ok=True)
+    (trace_dir / "trajectory.jsonl").write_text(
+        '{"message":{"role":"assistant","content":"first"}}\n',
+        encoding="utf-8",
+    )
+
+    client = TestClient(create_app(repo_root=tmp_path))
+
+    bootstrap_record = client.get("/api/bootstrap").json()["workbench_entries"][0]["record"]
+    assert bootstrap_record["turn_count"] == 2
+
+    summary = client.get("/api/records/rec_turns_001/summary").json()
+    assert summary["turn_count"] == 2
+    assert summary["has_traces"] is True
+
+    dataset_browse = client.get("/api/records/browse?source=dataset").json()
+    assert dataset_browse["records"][0]["turn_count"] == 2
+
+    trace_response = client.get("/api/records/rec_turns_001/traces/trajectory.jsonl")
+    assert trace_response.status_code == 200
+    assert "first" in trace_response.text
 
 
 def test_viewer_api_filters_dataset_by_agent_harness(tmp_path: Path) -> None:
@@ -139,6 +255,12 @@ def test_viewer_api_filters_dataset_by_agent_harness(tmp_path: Path) -> None:
             "Claude washer",
             "claude_washers",
             CreatorMetadata(mode="external_agent", agent="claude-code", trace_available=False),
+        ),
+        (
+            "rec_cursor_001",
+            "Cursor washer",
+            "cursor_washers",
+            CreatorMetadata(mode="external_agent", agent="cursor", trace_available=False),
         ),
     ]
     for index, (record_id, title, category_slug, creator) in enumerate(records, start=1):
@@ -162,11 +284,12 @@ def test_viewer_api_filters_dataset_by_agent_harness(tmp_path: Path) -> None:
     client = TestClient(create_app(repo_root=tmp_path))
 
     dataset_browse = client.get("/api/records/browse?source=dataset").json()
-    assert dataset_browse["total"] == 3
+    assert dataset_browse["total"] == 4
     assert dataset_browse["facets"]["agent_harnesses"] == [
         "articraft",
         "codex",
         "claude-code",
+        "cursor",
     ]
 
     articraft_browse = client.get(
@@ -188,6 +311,11 @@ def test_viewer_api_filters_dataset_by_agent_harness(tmp_path: Path) -> None:
     assert browse_ids["total"] == 1
     assert browse_ids["record_ids"] == ["rec_claude_001"]
 
+    cursor_browse = client.get("/api/records/browse?source=dataset&agent_harness=cursor").json()
+    assert cursor_browse["total"] == 1
+    assert cursor_browse["record_ids"] == ["rec_cursor_001"]
+    assert cursor_browse["records"][0]["external_agent"] == "cursor"
+
     search_results = client.get(
         "/api/records/search?q=washer&source=dataset&agent_harness=codex"
     ).json()
@@ -198,6 +326,7 @@ def test_viewer_api_filters_dataset_by_agent_harness(tmp_path: Path) -> None:
         "articraft",
         "codex",
         "claude-code",
+        "cursor",
     ]
     assert dashboard["overview"]["total_records"] == 1
     assert dashboard["overview"]["is_filtered"] is True
@@ -314,6 +443,148 @@ def test_viewer_api_smoke_bootstrap_browse_search_and_assets(tmp_path: Path) -> 
     mesh_file = client.get("/api/records/rec_hinge_001/files/assets/meshes/part.obj")
     assert mesh_file.status_code == 200
     assert "v 1 0 0" in mesh_file.text
+
+
+def test_viewer_api_uses_records_index_for_unhydrated_dataset_record(tmp_path: Path) -> None:
+    repo = StorageRepo(tmp_path)
+    repo.ensure_layout()
+    repo.write_text(
+        repo.layout.records_index_path,
+        json.dumps(
+            {
+                "schema_version": 1,
+                "record_id": "rec_unhydrated_001",
+                "dataset_id": "ds_unhydrated_001",
+                "category_slug": "hinges",
+                "title": "Pointer-only hinge",
+                "prompt_preview": "A hinge that is available through Git LFS.",
+                "rating": 5,
+                "effective_rating": 5.0,
+                "created_at": "2026-03-18T08:00:00Z",
+                "updated_at": "2026-03-18T08:00:00Z",
+                "sdk_package": "sdk",
+                "provider": "openai",
+                "model_id": "gpt-5.4",
+                "collections": ["dataset"],
+            }
+        )
+        + "\n",
+    )
+
+    client = TestClient(create_app(repo_root=tmp_path))
+
+    summary = client.get("/api/records/rec_unhydrated_001/summary")
+    assert summary.status_code == 200
+    assert summary.json()["payload_status"] == "missing"
+
+    browse = client.get("/api/records/browse?source=dataset")
+    assert browse.status_code == 200
+    assert browse.json()["records"][0]["record_id"] == "rec_unhydrated_001"
+    assert browse.json()["records"][0]["payload_status"] == "missing"
+
+    file_response = client.get("/api/records/rec_unhydrated_001/files/model.py")
+    assert file_response.status_code == 409
+    assert "data hydrate --record rec_unhydrated_001" in file_response.json()["detail"]
+
+
+def test_dataset_browse_resolves_payload_status_only_for_returned_rows(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    repo = StorageRepo(tmp_path)
+    repo.ensure_layout()
+    rows = [
+        {
+            "schema_version": 1,
+            "record_id": "rec_fast_old_001",
+            "dataset_id": "ds_fast_old_001",
+            "category_slug": "hinges",
+            "title": "Old indexed hinge",
+            "prompt_preview": "Older indexed row.",
+            "created_at": "2026-03-18T08:00:00Z",
+            "updated_at": "2026-03-18T08:00:00Z",
+            "collections": ["dataset"],
+        },
+        {
+            "schema_version": 1,
+            "record_id": "rec_fast_new_001",
+            "dataset_id": "ds_fast_new_001",
+            "category_slug": "hinges",
+            "title": "New indexed hinge",
+            "prompt_preview": "Newer indexed row.",
+            "created_at": "2026-03-18T09:00:00Z",
+            "updated_at": "2026-03-18T09:00:00Z",
+            "collections": ["dataset"],
+        },
+    ]
+    repo.write_text(
+        repo.layout.records_index_path,
+        "".join(json.dumps(row, separators=(",", ":")) + "\n" for row in rows),
+    )
+
+    calls: list[str] = []
+
+    def fake_payload_status(_repo: StorageRepo, record_id: str) -> str:
+        calls.append(record_id)
+        return "missing"
+
+    monkeypatch.setattr("viewer.api.browse_index.record_payload_status", fake_payload_status)
+    client = TestClient(create_app(repo_root=tmp_path))
+
+    browse_ids = client.get("/api/records/browse/ids?source=dataset")
+    assert browse_ids.status_code == 200
+    assert calls == []
+
+    browse = client.get("/api/records/browse?source=dataset&limit=1")
+    assert browse.status_code == 200
+    assert [record["record_id"] for record in browse.json()["records"]] == ["rec_fast_new_001"]
+    assert browse.json()["records"][0]["payload_status"] == "missing"
+    assert calls == ["rec_fast_new_001"]
+
+
+def test_dashboard_uses_records_index_rows_without_per_record_lookup(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    repo = StorageRepo(tmp_path)
+    repo.ensure_layout()
+    repo.write_text(
+        repo.layout.records_index_path,
+        "".join(
+            json.dumps(
+                {
+                    "schema_version": 1,
+                    "record_id": f"rec_dashboard_{index:03d}",
+                    "dataset_id": f"ds_dashboard_{index:03d}",
+                    "category_slug": "hinges",
+                    "title": f"Dashboard row {index}",
+                    "prompt_preview": "Indexed dashboard row.",
+                    "created_at": f"2026-03-18T08:0{index}:00Z",
+                    "updated_at": f"2026-03-18T08:0{index}:00Z",
+                    "effective_rating": 5.0,
+                    "total_cost_usd": 1.25,
+                    "input_tokens": 1000,
+                    "output_tokens": 100,
+                    "agent_harness": "articraft",
+                    "collections": ["dataset"],
+                },
+                separators=(",", ":"),
+            )
+            + "\n"
+            for index in range(1, 3)
+        ),
+    )
+
+    def fail_per_record_lookup(_repo: StorageRepo, _record_id: str) -> dict:
+        raise AssertionError("dashboard should use records_index rows directly")
+
+    monkeypatch.setattr("viewer.api.store_dashboard.find_record_index_row", fail_per_record_lookup)
+    client = TestClient(create_app(repo_root=tmp_path))
+
+    dashboard = client.get("/api/dashboard")
+    assert dashboard.status_code == 200
+    assert dashboard.json()["overview"]["total_records"] == 2
+    assert dashboard.json()["category_stats"]["hinges"]["count"] == 2
 
 
 def test_viewer_api_promote_uses_category_slug_not_display_title(

@@ -10,8 +10,13 @@ from pathlib import Path
 from shutil import which
 
 from agent import runner as agent_runner
-from agent.providers.factory import infer_provider_from_model_id
-from articraft.values import PROVIDER_VALUES, THINKING_LEVEL_VALUES
+from agent.providers.factory import ProviderConfig, default_model_id, infer_provider_from_model_id
+from articraft.config import (
+    default_model_from_env,
+    default_thinking_level_from_env,
+    load_repo_env,
+)
+from articraft.values import PROVIDER_VALUES, THINKING_LEVEL_VALUE_SET, THINKING_LEVEL_VALUES
 from cli import compile_all as compile_all_cli
 from cli import compile_record as compile_record_cli
 from cli import dataset as dataset_cli
@@ -21,11 +26,9 @@ from cli import hooks as hooks_cli
 from cli import pre_commit as pre_commit_cli
 from cli import workbench as workbench_cli
 from cli.common import provider_for_record_image, refresh_dataset_manifest_if_member
+from storage.records_index import find_record_index_row
 from storage.repo import StorageRepo
 from storage.search import SearchIndex
-
-DEFAULT_MODEL = "gpt-5.5-2026-04-23"
-DEFAULT_THINKING = "high"
 
 DatasetDispatchKey = tuple[str, str | None]
 DatasetArgBuilder = Callable[[argparse.Namespace], list[str]]
@@ -38,14 +41,32 @@ def _infer_provider(model_id: str) -> str:
         return provider
     raise ValueError(
         f"Unable to infer provider for model '{model_id}'. "
-        "Pass --provider explicitly or use a known OpenAI, Gemini, Anthropic, or OpenRouter model ID."
+        "Pass --provider explicitly or use a known OpenAI, Gemini, Anthropic, DashScope, "
+        "OpenRouter, DeepSeek, or Codex CLI model ID."
     )
 
 
 def _model_and_provider(args: argparse.Namespace) -> tuple[str, str]:
-    model_id = str(args.model or DEFAULT_MODEL)
-    provider = str(args.provider or _infer_provider(model_id))
+    if args.model:
+        model_id = str(args.model)
+        provider = str(args.provider or _infer_provider(model_id))
+        return model_id, provider
+    if args.provider:
+        provider = str(args.provider)
+        model_id = default_model_id(ProviderConfig(provider=provider))
+        return model_id, provider
+    model_id = str(default_model_from_env())
+    provider = str(_infer_provider(model_id))
     return model_id, provider
+
+
+def _thinking_level_from_args(args: argparse.Namespace) -> str:
+    thinking_level = str(args.thinking_level or default_thinking_level_from_env())
+    if thinking_level not in THINKING_LEVEL_VALUE_SET:
+        raise ValueError(
+            "ARTICRAFT_THINKING_LEVEL must be one of: " + ", ".join(THINKING_LEVEL_VALUES)
+        )
+    return thinking_level
 
 
 def _dataset(args: argparse.Namespace, argv: list[str]) -> int:
@@ -87,6 +108,7 @@ def _run_status(args: argparse.Namespace) -> int:
 def _run_generate(args: argparse.Namespace) -> int:
     try:
         model_id, provider = _model_and_provider(args)
+        thinking_level = _thinking_level_from_args(args)
     except ValueError as exc:
         print(str(exc))
         return 1
@@ -97,11 +119,10 @@ def _run_generate(args: argparse.Namespace) -> int:
         args.prompt,
         "--provider",
         provider,
-        "--model",
-        model_id,
-        "--thinking",
-        args.thinking_level,
     ]
+    if model_id:
+        argv.extend(["--model", model_id])
+    argv.extend(["--thinking", thinking_level])
     if args.image:
         argv.extend(["--image", args.image])
     if args.max_cost_usd is not None:
@@ -112,6 +133,7 @@ def _run_generate(args: argparse.Namespace) -> int:
 def _run_draft(args: argparse.Namespace) -> int:
     try:
         model_id, provider = _model_and_provider(args)
+        thinking_level = _thinking_level_from_args(args)
     except ValueError as exc:
         print(str(exc))
         return 1
@@ -120,11 +142,10 @@ def _run_draft(args: argparse.Namespace) -> int:
         args.prompt,
         "--provider",
         provider,
-        "--model-id",
-        model_id,
-        "--thinking-level",
-        args.thinking_level,
     ]
+    if model_id:
+        argv.extend(["--model-id", model_id])
+    argv.extend(["--thinking-level", thinking_level])
     if args.image:
         argv.extend(["--image", args.image])
     if args.max_cost_usd is not None:
@@ -259,6 +280,8 @@ def _resolve_record_id(repo_root: Path, record_ref: str) -> str:
         raise ValueError("Record reference is required.")
     if repo.layout.record_metadata_path(record_id).exists():
         return record_id
+    if find_record_index_row(repo, record_id) is not None:
+        return record_id
     raise ValueError(f"Record not found: {record_ref}")
 
 
@@ -373,6 +396,7 @@ def _run_dataset_batch_new(args: argparse.Namespace) -> int:
 def _run_dataset_run(args: argparse.Namespace) -> int:
     try:
         model_id, provider = _model_and_provider(args)
+        thinking_level = _thinking_level_from_args(args)
     except ValueError as exc:
         print(str(exc))
         return 1
@@ -383,11 +407,10 @@ def _run_dataset_run(args: argparse.Namespace) -> int:
         args.category_slug,
         "--provider",
         provider,
-        "--model-id",
-        model_id,
-        "--thinking-level",
-        args.thinking_level,
     ]
+    if model_id:
+        argv.extend(["--model-id", model_id])
+    argv.extend(["--thinking-level", thinking_level])
     if args.image:
         argv.extend(["--image", args.image])
     if args.dataset_id:
@@ -540,7 +563,39 @@ def _run_dataset_dispatch(args: argparse.Namespace) -> int:
 
 
 def _run_data_check(args: argparse.Namespace) -> int:
-    return _dataset(args, ["validate-format"])
+    argv = ["validate-format"]
+    if args.require_records:
+        argv.append("--require-records")
+    for record_id in args.records or []:
+        argv.extend(["--record", record_id])
+    return _dataset(args, argv)
+
+
+def _run_data_hydrate(args: argparse.Namespace) -> int:
+    argv = ["hydrate"]
+    for record_id in args.records or []:
+        argv.extend(["--record", record_id])
+    if args.category:
+        argv.extend(["--category", args.category])
+    if args.time_from:
+        argv.extend(["--time-from", args.time_from])
+    if args.time_to:
+        argv.extend(["--time-to", args.time_to])
+    if args.last:
+        argv.extend(["--last", args.last])
+    if args.all_records:
+        argv.append("--all")
+    if args.from_file:
+        argv.extend(["--from-file", str(args.from_file)])
+    return _dataset(args, argv)
+
+
+def _run_data_lfs_status(args: argparse.Namespace) -> int:
+    return _dataset(args, ["lfs-status"])
+
+
+def _run_data_build_record_index(args: argparse.Namespace) -> int:
+    return _dataset(args, ["build-record-index"])
 
 
 def _run_env_bootstrap(args: argparse.Namespace) -> int:
@@ -566,11 +621,11 @@ def _add_repo_root(parser: argparse.ArgumentParser) -> None:
 
 def _add_generation_options(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--provider", choices=PROVIDER_VALUES)
-    parser.add_argument("--model", default=DEFAULT_MODEL, help="Model ID to use.")
+    parser.add_argument("--model", default=None, help="Model ID to use.")
     parser.add_argument(
         "--thinking-level",
         "--thinking",
-        default=DEFAULT_THINKING,
+        default=None,
         choices=THINKING_LEVEL_VALUES,
         help="Thinking budget level.",
     )
@@ -600,7 +655,14 @@ def _add_internal_edit_options(
 def _add_internal_pre_commit_commands(subparsers: argparse._SubParsersAction) -> None:
     pre_commit = subparsers.add_parser("pre-commit")
     pre_commit_sub = pre_commit.add_subparsers(dest="pre_commit_command", required=True)
-    for command in ("forbidden-paths", "secrets", "smoke-tests", "data-format", "data-check"):
+    for command in (
+        "forbidden-paths",
+        "secrets",
+        "smoke-tests",
+        "lfs-push-records",
+        "data-format",
+        "data-check",
+    ):
         pre_commit_cmd = pre_commit_sub.add_parser(command)
         pre_commit_cmd.add_argument("paths", nargs="*")
         mapped_command = "data-format" if command == "data-check" else command
@@ -698,7 +760,28 @@ def _build_parser() -> argparse.ArgumentParser:
     data_sub = data.add_subparsers(dest="data_command", required=True)
     data_check = data_sub.add_parser("check", help="Validate checked-in data format.")
     _add_repo_root(data_check)
+    data_check.add_argument("--require-records", action="store_true")
+    data_check.add_argument("--record", dest="records", action="append", default=[])
     data_check.set_defaults(func=_run_data_check)
+    data_hydrate = data_sub.add_parser("hydrate", help="Hydrate LFS-backed records.")
+    _add_repo_root(data_hydrate)
+    data_hydrate.add_argument("--record", dest="records", action="append", default=[])
+    data_hydrate.add_argument("--category", default=None)
+    data_hydrate.add_argument("--time-from", default=None)
+    data_hydrate.add_argument("--time-to", default=None)
+    data_hydrate.add_argument("--last", default=None)
+    data_hydrate.add_argument("--all", action="store_true", dest="all_records")
+    data_hydrate.add_argument("--from-file", type=Path, default=None)
+    data_hydrate.set_defaults(func=_run_data_hydrate)
+    data_lfs_status = data_sub.add_parser("lfs-status", help="Show record LFS status.")
+    _add_repo_root(data_lfs_status)
+    data_lfs_status.set_defaults(func=_run_data_lfs_status)
+    data_record_index = data_sub.add_parser(
+        "build-record-index",
+        help="Build data/records_index.jsonl from hydrated records.",
+    )
+    _add_repo_root(data_record_index)
+    data_record_index.set_defaults(func=_run_data_build_record_index)
 
     external = subparsers.add_parser(
         "external",
@@ -834,8 +917,18 @@ def _build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _repo_root_from_argv(args_list: list[str]) -> Path:
+    for index, arg in enumerate(args_list):
+        if arg == "--repo-root" and index + 1 < len(args_list):
+            return Path(args_list[index + 1]).resolve()
+        if arg.startswith("--repo-root="):
+            return Path(arg.removeprefix("--repo-root=")).resolve()
+    return Path.cwd()
+
+
 def main(argv: list[str] | None = None) -> int:
     args_list = sys.argv[1:] if argv is None else argv
+    load_repo_env(_repo_root_from_argv(args_list))
     if args_list and args_list[0] == "internal":
         parser = _build_internal_parser()
         args = parser.parse_args(args_list[1:])

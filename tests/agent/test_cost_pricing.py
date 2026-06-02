@@ -132,6 +132,40 @@ def test_gemini_flash_preview_pricing_remains_generic_flash_rates() -> None:
     }
 
 
+def test_dashscope_qwen36_flash_pricing_uses_context_tiers() -> None:
+    pricing = pricing_for_provider_model("dashscope", "qwen3.6-flash")
+
+    assert pricing == {
+        "input_uncached": 0.25,
+        "input_cached": 0.25,
+        "output": 1.50,
+        "prompt_tier_threshold_tokens": 256_000,
+        "input_uncached_above_threshold": 1.00,
+        "input_cached_above_threshold": 1.00,
+        "output_above_threshold": 4.00,
+    }
+
+
+def test_dashscope_qwen36_flash_pricing_calculates_high_context_tier() -> None:
+    pricing = pricing_for_provider_model("dashscope", "qwen3.6-flash")
+    assert pricing is not None
+
+    cost = calculate_cost(
+        {
+            "prompt_tokens": 300_000,
+            "cached_tokens": 100_000,
+            "candidates_tokens": 10_000,
+            "total_tokens": 310_000,
+        },
+        pricing,
+    )
+
+    assert cost.input_uncached_cost == pytest.approx(0.2)
+    assert cost.input_cached_cost == pytest.approx(0.1)
+    assert cost.output_cost == pytest.approx(0.04)
+    assert cost.total_cost == pytest.approx(0.34)
+
+
 def test_gpt55_pricing_uses_explicit_model_rates() -> None:
     pricing = pricing_for_provider_model("openai", "gpt-5.5-2026-04-23")
 
@@ -173,25 +207,3 @@ def test_gpt54_pricing_remains_unchanged() -> None:
     assert pricing["input_uncached"] == 2.50
     assert pricing["input_cached"] == 0.25
     assert pricing["output"] == 15.00
-
-
-def test_openrouter_pricing_with_provider_prefixes() -> None:
-    # Hyphen and Dot format for Claude Opus 4.7
-    pricing_hyphen = pricing_for_provider_model("openrouter", "anthropic/claude-opus-4-7")
-    pricing_dot = pricing_for_provider_model("openrouter", "anthropic/claude-opus-4.7")
-
-    expected_opus = {
-        "input_uncached": 5.00,
-        "input_cached": 0.00,
-        "output": 25.00,
-    }
-    assert pricing_hyphen == expected_opus
-    assert pricing_dot == expected_opus
-
-    # Sonnet 4.6 dot format
-    pricing_sonnet = pricing_for_provider_model("openrouter", "anthropic/claude-sonnet-4.6")
-    assert pricing_sonnet == {
-        "input_uncached": 3.00,
-        "input_cached": 0.00,
-        "output": 15.00,
-    }

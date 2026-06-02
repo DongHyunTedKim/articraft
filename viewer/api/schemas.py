@@ -16,6 +16,13 @@ class DeleteRecordResponse(BaseModel):
     record_id: str
 
 
+class HydrateRecordResponse(BaseModel):
+    status: str
+    record_id: str
+    hydrated_count: int = 0
+    message: str | None = None
+
+
 class DeleteStagingResponse(BaseModel):
     status: str
     run_id: str
@@ -74,6 +81,7 @@ class RecordSummaryResponse(BaseModel):
     has_compile_report: bool = False
     has_provenance: bool = False
     has_cost: bool = False
+    payload_status: str = "hydrated"
 
 
 class RecordBrowseFacetsResponse(BaseModel):

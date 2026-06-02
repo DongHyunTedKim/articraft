@@ -5,12 +5,14 @@ import asyncio
 from fastapi import APIRouter, HTTPException, Query
 
 from storage.identifiers import validate_record_id
+from storage.lfs import hydrate_records
 from viewer.api.dependencies import FileResolverDep, ViewerStoreDep
 from viewer.api.file_manager import open_in_file_manager
 from viewer.api.schemas import (
     DatasetEntryResponse,
     DeleteRecordResponse,
     DeleteStagingResponse,
+    HydrateRecordResponse,
     OpenRecordFolderResponse,
     OpenStagingFolderResponse,
     PromoteRecordRequest,
@@ -40,6 +42,24 @@ async def record_summary(record_id: str, store: ViewerStoreDep) -> RecordSummary
     if summary is None:
         raise HTTPException(status_code=404, detail=f"Record not found: {record_id}")
     return summary
+
+
+@router.post("/api/records/{record_id}/hydrate", response_model=HydrateRecordResponse)
+async def hydrate_record(record_id: str, store: ViewerStoreDep) -> HydrateRecordResponse:
+    _validate_record_id(record_id)
+    try:
+        result = await asyncio.to_thread(hydrate_records, store.repo, [record_id])
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except RuntimeError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+    store.dataset_browse_index.invalidate()
+    return HydrateRecordResponse(
+        status="hydrated",
+        record_id=record_id,
+        hydrated_count=result.hydrated_count,
+        message=None,
+    )
 
 
 @router.get("/api/records/{record_id}/history", response_model=RecordHistoryResponse)

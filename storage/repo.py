@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any
 
 from storage.layout import StorageLayout
+from storage.lfs_pointers import is_lfs_pointer_file
 
 
 @dataclass(slots=True)
@@ -22,6 +23,8 @@ class StorageRepo:
 
     def read_json(self, path: Path, *, default: Any = None) -> Any:
         if not path.exists():
+            return default
+        if is_lfs_pointer_file(path):
             return default
         return json.loads(path.read_text(encoding="utf-8"))
 

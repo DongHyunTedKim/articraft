@@ -3,7 +3,6 @@ from __future__ import annotations
 from argparse import ArgumentParser
 from pathlib import Path
 
-from cli.hooks import get_post_commit_hook_status
 from storage.datasets import DatasetStore
 from storage.repo import StorageRepo
 from storage.revisions import active_provenance_path
@@ -19,22 +18,7 @@ def add_data_root_argument(parser: ArgumentParser) -> None:
 
 
 def warn_if_post_commit_hook_missing(repo_root: Path) -> None:
-    try:
-        status = get_post_commit_hook_status(repo_root)
-    except RuntimeError:
-        return
-
-    if status.status == "installed":
-        return
-
-    print(
-        "Warning: managed post-commit hook is "
-        f"{status.status} at {status.hook_path}. "
-        "Record metadata will not auto-sync after commits, including rated_by and "
-        "secondary_rated_by. "
-        "Run `just setup`, or `just hooks-install`, or "
-        "`uv run articraft hooks install`."
-    )
+    _ = repo_root
 
 
 def provider_for_record_image(

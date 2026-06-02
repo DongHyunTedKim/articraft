@@ -35,26 +35,26 @@ uv-version-ensure:
       uv --no-config self update "$required"; \
     fi
 
-setup:
+setup root='.':
     just uv-version-ensure
     # Create a local env template once; never overwrite an existing secrets file.
-    uv run --frozen articraft env bootstrap
-    uv sync --frozen --group dev
-    uv run --frozen pre-commit install --hook-type pre-commit --hook-type pre-push
-    uv run --frozen articraft hooks install
+    uv run --frozen --directory {{ quote(root) }} articraft env bootstrap
+    uv sync --frozen --group dev --directory {{ quote(root) }}
+    uv run --frozen --directory {{ quote(root) }} articraft hooks install
+    uv run --frozen --directory {{ quote(root) }} pre-commit install --hook-type pre-commit --hook-type pre-push
     @if command -v npm >/dev/null 2>&1; then \
-        npm --prefix viewer/web ci; \
-        npm --prefix viewer/web run typecheck; \
+        npm --prefix {{ quote(root + "/viewer/web") }} ci; \
+        npm --prefix {{ quote(root + "/viewer/web") }} run typecheck; \
     else \
         echo "npm not found; skipping viewer/web dependency install."; \
         echo "Install Node.js and npm to run the viewer and frontend hooks."; \
     fi
-    uv run --frozen articraft init
+    uv run --frozen --directory {{ quote(root) }} articraft init
 
 hooks-install:
     just uv-version-check
-    uv run --frozen pre-commit install --hook-type pre-commit --hook-type pre-push
     uv run --frozen articraft hooks install
+    uv run --frozen pre-commit install --hook-type pre-commit --hook-type pre-push
 
 format:
     just uv-version-check
@@ -88,6 +88,22 @@ compile-all-full-force:
     just uv-version-check
     uv run --frozen articraft compile-all --target full --force
 
+data-hydrate-all:
+    just uv-version-check
+    uv run --frozen articraft data hydrate --all
+
+data-hydrate-record record:
+    just uv-version-check
+    uv run --frozen articraft data hydrate --record {{ quote(record) }}
+
+data-hydrate-category category:
+    just uv-version-check
+    uv run --frozen articraft data hydrate --category {{ quote(category) }}
+
+data-hydrate-time from to:
+    just uv-version-check
+    uv run --frozen articraft data hydrate --time-from {{ quote(from) }} --time-to {{ quote(to) }}
+
 smoke-tests:
     just uv-version-check
     uv run --frozen --group dev pytest -q \
@@ -110,3 +126,9 @@ viewer:
 viewer-dev:
     just uv-version-check
     uv run --frozen articraft viewer --dev --host {{ quote(host) }} --port {{ quote(port) }}
+
+dashscope-test:
+    bash scripts/dashscope_run.sh official-test
+
+dashscope-generate prompt:
+    bash scripts/dashscope_run.sh generate {{ quote(prompt) }}

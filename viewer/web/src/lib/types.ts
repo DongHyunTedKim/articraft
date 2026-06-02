@@ -1,5 +1,6 @@
 export type RecordSummary = {
   record_id: string;
+  payload_status: "hydrated" | "unhydrated" | "missing";
   title: string;
   prompt_preview: string;
   rating: number | null;
@@ -203,6 +204,13 @@ export type RecordSecondaryRatingResponse = {
 export type DeleteRecordResult = {
   status: string;
   record_id: string;
+};
+
+export type HydrateRecordResult = {
+  status: string;
+  record_id: string;
+  hydrated_count: number;
+  message: string | null;
 };
 
 export type DeleteStagingResult = {

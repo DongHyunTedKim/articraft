@@ -1,24 +1,16 @@
 from __future__ import annotations
 
 import argparse
-import os
-import stat
 import subprocess
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Literal
 
-from storage.record_authors import (
-    sync_record_authors,
-    sync_record_rated_by,
-    sync_record_secondary_rated_by,
-)
-from storage.repo import StorageRepo
-
 REPO_ROOT = Path(__file__).resolve().parent.parent
 POST_COMMIT_GUARD_ENV = "ARTICRAFT_POST_COMMIT_AUTHOR_SYNC_RUNNING"
 MANAGED_POST_COMMIT_MARKER = "# articraft-managed-post-commit"
+GIT_LFS_HOOK_NAMES = ("pre-push", "post-checkout", "post-commit", "post-merge")
 MANAGED_POST_COMMIT_SCRIPT = """#!/usr/bin/env bash
 {marker}
 set -euo pipefail
@@ -147,44 +139,15 @@ class PostCommitHookStatus:
         return self.status == "installed"
 
 
+@dataclass(slots=True, frozen=True)
+class HookInstallResult:
+    removed_stock_lfs_hooks: list[Path] = field(default_factory=list)
+    configured_git_settings: dict[str, str] = field(default_factory=dict)
+
+
 def run_post_commit_record_metadata_sync(repo_root: Path) -> PostCommitRecordMetadataResult:
-    if os.environ.get(POST_COMMIT_GUARD_ENV):
-        return PostCommitRecordMetadataResult()
-
-    repo_root = repo_root.resolve()
-    touched_record_ids = touched_record_ids_for_commit(repo_root)
-    touched_record_metadata_ids = touched_record_metadata_ids_for_commit(repo_root)
-    if not touched_record_ids and not touched_record_metadata_ids:
-        return PostCommitRecordMetadataResult()
-
-    repo = StorageRepo(repo_root)
-    author_summary = sync_record_authors(repo, record_ids=touched_record_ids)
-    rated_by_summary = sync_record_rated_by(repo, record_ids=touched_record_metadata_ids)
-    secondary_rated_by_summary = sync_record_secondary_rated_by(
-        repo,
-        record_ids=touched_record_metadata_ids,
-    )
-    updated_record_ids = sorted(
-        set(author_summary.updated_record_ids)
-        | set(rated_by_summary.updated_record_ids)
-        | set(secondary_rated_by_summary.updated_record_ids)
-    )
-    if updated_record_ids:
-        updated_paths = [
-            repo.layout.record_metadata_path(record_id).resolve().relative_to(repo_root).as_posix()
-            for record_id in updated_record_ids
-        ]
-        _git_run(repo_root, "add", "--", *updated_paths)
-        env = dict(os.environ)
-        env[POST_COMMIT_GUARD_ENV] = "1"
-        _git_run(repo_root, "commit", "--amend", "--no-edit", "--no-verify", env=env)
-    return PostCommitRecordMetadataResult(
-        touched_record_ids=touched_record_ids,
-        touched_record_metadata_ids=touched_record_metadata_ids,
-        updated_author_record_ids=list(author_summary.updated_record_ids),
-        updated_rated_by_record_ids=list(rated_by_summary.updated_record_ids),
-        updated_secondary_rated_by_record_ids=list(secondary_rated_by_summary.updated_record_ids),
-    )
+    _ = repo_root
+    return PostCommitRecordMetadataResult()
 
 
 def run_post_commit_record_author_sync(repo_root: Path) -> PostCommitRecordMetadataResult:
@@ -206,36 +169,64 @@ def get_post_commit_hook_status(repo_root: Path) -> PostCommitHookStatus:
 def install_post_commit_hook(repo_root: Path) -> Path:
     repo_root = repo_root.resolve()
     status = get_post_commit_hook_status(repo_root)
-    hook_path = status.hook_path
-    if hook_path.exists():
-        if status.status == "installed":
-            current_mode = stat.S_IMODE(hook_path.stat().st_mode)
-            hook_path.chmod(current_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
-            return hook_path
-        existing = hook_path.read_text(encoding="utf-8")
-        if MANAGED_POST_COMMIT_MARKER not in existing:
-            raise RuntimeError(
-                f"Refusing to overwrite unmanaged post-commit hook at {hook_path}. "
-                "Please merge it manually."
-            )
-    hook_path.parent.mkdir(parents=True, exist_ok=True)
-    hook_path.write_text(MANAGED_POST_COMMIT_SCRIPT, encoding="utf-8")
-    current_mode = stat.S_IMODE(hook_path.stat().st_mode)
-    hook_path.chmod(current_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
-    return hook_path
+    return status.hook_path
+
+
+def _is_stock_git_lfs_hook(path: Path, hook_name: str) -> bool:
+    if not path.exists() or not path.is_file():
+        return False
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError:
+        return False
+    return (
+        "This repository is configured for Git LFS" in text
+        and f'git lfs {hook_name} "$@"' in text.splitlines()
+    )
+
+
+def remove_stock_git_lfs_hooks(repo_root: Path) -> list[Path]:
+    removed: list[Path] = []
+    for hook_name in GIT_LFS_HOOK_NAMES:
+        for suffix in ("", ".legacy"):
+            hook_path = _git_path(repo_root, f"hooks/{hook_name}{suffix}")
+            if not _is_stock_git_lfs_hook(hook_path, hook_name):
+                continue
+            hook_path.unlink()
+            removed.append(hook_path)
+    return removed
+
+
+def install_hooks(repo_root: Path) -> HookInstallResult:
+    repo_root = repo_root.resolve()
+    removed = remove_stock_git_lfs_hooks(repo_root)
+    git_settings = {
+        "lfs.sshtransfer": "never",
+        "core.untrackedCache": "true",
+        "core.fsmonitor": "true",
+    }
+    for key, value in git_settings.items():
+        _git_run(repo_root, "config", "--local", key, value)
+    return HookInstallResult(
+        removed_stock_lfs_hooks=removed,
+        configured_git_settings=git_settings,
+    )
 
 
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="articraft hooks")
     subparsers = parser.add_subparsers(dest="command", required=True)
-    subparsers.add_parser("install", help="Install the managed post-commit hook.")
+    subparsers.add_parser(
+        "install",
+        help="Repair Articraft hook defaults without overwriting custom hooks.",
+    )
     subparsers.add_parser(
         "check",
-        help="Report whether the managed post-commit hook is installed, missing, or unmanaged.",
+        help="Report whether an old managed post-commit hook is installed, missing, or unmanaged.",
     )
     subparsers.add_parser(
         "post-commit-record-authors",
-        help="Hook entrypoint that syncs record author metadata and amends the latest commit.",
+        help="No-op compatibility entrypoint for old managed metadata hooks.",
     )
     return parser
 
@@ -245,8 +236,14 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     if args.command == "install":
-        hook_path = install_post_commit_hook(REPO_ROOT)
-        print(f"Installed post-commit hook at {hook_path}")
+        result = install_hooks(REPO_ROOT)
+        if result.removed_stock_lfs_hooks:
+            print("Removed stock Git LFS hooks:")
+            for hook_path in result.removed_stock_lfs_hooks:
+                print(f"  - {hook_path}")
+        print("Configured local Git settings:")
+        for key, value in result.configured_git_settings.items():
+            print(f"  - {key}={value}")
         return 0
 
     if args.command == "check":
@@ -257,19 +254,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "post-commit-record-authors":
         result = run_post_commit_record_metadata_sync(REPO_ROOT)
         if result.updated_record_ids:
-            detail_parts: list[str] = []
-            if result.updated_author_record_ids:
-                detail_parts.append("author=" + ", ".join(result.updated_author_record_ids[:10]))
-            if result.updated_rated_by_record_ids:
-                detail_parts.append(
-                    "rated_by=" + ", ".join(result.updated_rated_by_record_ids[:10])
-                )
-            if result.updated_secondary_rated_by_record_ids:
-                detail_parts.append(
-                    "secondary_rated_by="
-                    + ", ".join(result.updated_secondary_rated_by_record_ids[:10])
-                )
-            print("Synced record metadata for latest commit: " + "; ".join(detail_parts))
+            print("Managed post-commit metadata sync is disabled.")
         return 0
 
     print(f"Unknown command: {args.command}")

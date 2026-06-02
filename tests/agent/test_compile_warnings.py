@@ -7,6 +7,7 @@ from types import SimpleNamespace
 from agent.compiler import _warn_geometry_scale_anomalies
 from agent.feedback import build_compile_signal_bundle, render_compile_signals
 from agent.harness import ArticraftAgent
+from agent.tools.base import ToolResult
 from sdk import AllowedOverlap, ArticulatedObject, Box, Cylinder
 from sdk import TestReport as SDKTestReport
 
@@ -359,7 +360,8 @@ def test_runtime_error_failure_uses_remote_traceback_location_lines() -> None:
 
 def test_non_runtime_error_failure_sanitizes_local_location_lines() -> None:
     source = "def build():\n    raise ValueError('bad loft')\n\nbuild()\n"
-    filename = "/Users/matthewzhou/articraft/agent/generated_model.py"
+    repo_root = Path(__file__).resolve().parents[2]
+    filename = str(repo_root / "agent/generated_model.py")
     linecache.cache[filename] = (len(source), None, source.splitlines(True), filename)
 
     try:
@@ -373,7 +375,7 @@ def test_non_runtime_error_failure_sanitizes_local_location_lines() -> None:
 
     signal = next(signal for signal in bundle.signals if signal.kind == "compile_runtime")
     assert "Location: agent/generated_model.py:2" in signal.details
-    assert "/Users/matthewzhou/articraft/agent/generated_model.py:2" not in signal.details
+    assert f"{filename}:2" not in signal.details
     assert "Code:     raise ValueError('bad loft')" in signal.details
 
 
@@ -657,3 +659,116 @@ def test_harness_injects_baseline_qc_guidance(tmp_path: Path) -> None:
     assert "`check_model_valid()`" in conversation[0]["content"]
     assert "`check_mesh_assets_ready()`" in conversation[0]["content"]
     assert "`fail_if_parts_overlap_in_current_pose()`" in conversation[0]["content"]
+
+
+def test_harness_injects_codex_compile_repair_guidance_once(tmp_path: Path) -> None:
+    model_path = tmp_path / "model.py"
+    model_path.write_text("object_model = None\n", encoding="utf-8")
+
+    agent = ArticraftAgent.__new__(ArticraftAgent)
+    agent.file_path = str(model_path)
+    agent.provider = "codex-cli"
+    agent.trace_writer = None
+
+    conversation: list[dict] = []
+    tool_calls = [{"function": {"name": "compile_model", "arguments": "{}"}}]
+    tool_results = [
+        ToolResult(
+            output=(
+                "<compile_signals>\n"
+                "Part overlaps detected between left_panel and latch.\n"
+                "Floating disconnected parts: latch_trim\n"
+                "</compile_signals>"
+            ),
+            compilation={"status": "error", "error": "compile failed"},
+            tool_call_id="call_1",
+        )
+    ]
+
+    agent._maybe_inject_compile_repair_guidance(
+        conversation,
+        tool_calls=tool_calls,
+        tool_results=tool_results,
+    )
+    agent._maybe_inject_compile_repair_guidance(
+        conversation,
+        tool_calls=tool_calls,
+        tool_results=tool_results,
+    )
+
+    assert len(conversation) == 1
+    assert "<codex_cli_compile_repair_guidance>" in conversation[0]["content"]
+    assert "floating/disconnected or overlap geometry" in conversation[0]["content"]
+
+
+def test_harness_skips_codex_compile_repair_guidance_for_openai(tmp_path: Path) -> None:
+    model_path = tmp_path / "model.py"
+    model_path.write_text("object_model = None\n", encoding="utf-8")
+
+    agent = ArticraftAgent.__new__(ArticraftAgent)
+    agent.file_path = str(model_path)
+    agent.provider = "openai"
+    agent.trace_writer = None
+
+    conversation: list[dict] = []
+    agent._maybe_inject_compile_repair_guidance(
+        conversation,
+        tool_calls=[{"function": {"name": "compile_model", "arguments": "{}"}}],
+        tool_results=[
+            ToolResult(
+                output="Part overlaps detected.",
+                compilation={"status": "error", "error": "compile failed"},
+                tool_call_id="call_1",
+            )
+        ],
+    )
+
+    assert conversation == []
+
+
+def test_harness_injects_codex_api_error_guidance(tmp_path: Path) -> None:
+    model_path = tmp_path / "model.py"
+    model_path.write_text("object_model = None\n", encoding="utf-8")
+
+    agent = ArticraftAgent.__new__(ArticraftAgent)
+    agent.file_path = str(model_path)
+    agent.provider = "codex-cli"
+    agent.trace_writer = None
+
+    conversation: list[dict] = []
+    agent._maybe_inject_api_error_guidance(
+        conversation,
+        tool_calls=[{"function": {"name": "compile_model", "arguments": "{}"}}],
+        tool_results=[
+            ToolResult(
+                output="AttributeError: 'Origin' object has no attribute 'with_updates'",
+                compilation={"status": "error", "error": "compile failed"},
+                tool_call_id="call_1",
+            )
+        ],
+    )
+
+    assert len(conversation) == 1
+    assert "<codex_cli_api_error_guidance>" in conversation[0]["content"]
+    assert "probe_model" in conversation[0]["content"]
+
+
+def test_harness_injects_codex_tool_json_guidance(tmp_path: Path) -> None:
+    model_path = tmp_path / "model.py"
+    model_path.write_text("object_model = None\n", encoding="utf-8")
+
+    agent = ArticraftAgent.__new__(ArticraftAgent)
+    agent.file_path = str(model_path)
+    agent.provider = "codex-cli"
+    agent.trace_writer = None
+
+    conversation: list[dict] = []
+    agent._maybe_inject_edit_code_guidance(
+        conversation,
+        tool_calls=[{"function": {"name": "write_file", "arguments": "{not json"}}],
+        tool_results=[ToolResult(error="Invalid JSON in tool arguments: Extra data")],
+    )
+
+    assert len(conversation) == 1
+    assert "<codex_cli_tool_json_guidance>" in conversation[0]["content"]
+    assert "apply_patch" in conversation[0]["content"]

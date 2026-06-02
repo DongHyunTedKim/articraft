@@ -11,7 +11,6 @@ from pathlib import Path
 import pytest
 
 from agent import runner
-from cli import hooks as git_hooks
 from cli.dataset import main as dataset_main
 from storage import dataset_workflow
 from storage.categories import CategoryStore
@@ -25,7 +24,6 @@ from storage.models import (
     RunRecord,
     SourceRef,
 )
-from storage.record_authors import RecordAuthorSyncSummary, RecordRatedBySyncSummary
 from storage.records import RecordStore
 from storage.repo import StorageRepo
 from storage.revisions import active_provenance_path
@@ -735,15 +733,13 @@ def test_run_single_reuses_existing_category_and_allocates_next_dataset_id(
     assert "dataset_id=ds_internet_router_0002" in captured
 
 
-def test_run_single_warns_when_post_commit_hook_missing(
+def test_run_single_does_not_warn_when_post_commit_hook_missing(
     fake_agent: None,
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     _patch_dataset_tokens(monkeypatch, "0001")
     _init_git_repo(tmp_path)
-    git_hooks.install_post_commit_hook(tmp_path)
-    (tmp_path / ".git" / "hooks" / "post-commit").unlink()
 
     output = io.StringIO()
     with redirect_stdout(output):
@@ -772,8 +768,7 @@ def test_run_single_warns_when_post_commit_hook_missing(
         )
 
     captured = output.getvalue()
-    assert "Warning: managed post-commit hook is missing" in captured
-    assert "just setup" in captured
+    assert "Warning: managed post-commit hook" not in captured
 
 
 def test_status_does_not_warn_when_post_commit_hook_missing(
@@ -781,8 +776,6 @@ def test_status_does_not_warn_when_post_commit_hook_missing(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     _init_git_repo(tmp_path)
-    git_hooks.install_post_commit_hook(tmp_path)
-    (tmp_path / ".git" / "hooks" / "post-commit").unlink()
 
     assert dataset_main(["--repo-root", str(tmp_path), "status"]) == 0
 
@@ -790,13 +783,11 @@ def test_status_does_not_warn_when_post_commit_hook_missing(
     assert "Warning: managed post-commit hook" not in captured
 
 
-def test_run_batch_warns_when_post_commit_hook_missing(
+def test_run_batch_does_not_warn_when_post_commit_hook_missing(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     _init_git_repo(tmp_path)
-    git_hooks.install_post_commit_hook(tmp_path)
-    (tmp_path / ".git" / "hooks" / "post-commit").unlink()
 
     class _NoopAwake:
         def __enter__(self) -> None:
@@ -838,7 +829,7 @@ def test_run_batch_warns_when_post_commit_hook_missing(
         )
 
     captured = output.getvalue()
-    assert "Warning: managed post-commit hook is missing" in captured
+    assert "Warning: managed post-commit hook" not in captured
     assert "Batch run_id=run_batch_001 status=success successes=1 failures=0" in captured
 
 
@@ -849,7 +840,6 @@ def test_run_single_does_not_warn_when_post_commit_hook_installed(
 ) -> None:
     _patch_dataset_tokens(monkeypatch, "0001")
     _init_git_repo(tmp_path)
-    git_hooks.install_post_commit_hook(tmp_path)
 
     output = io.StringIO()
     with redirect_stdout(output):
@@ -880,58 +870,14 @@ def test_run_single_does_not_warn_when_post_commit_hook_installed(
     assert "Warning: managed post-commit hook" not in output.getvalue()
 
 
-def test_sync_authors_cli_reports_summary(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    repo = StorageRepo(tmp_path)
-    repo.ensure_layout()
+def test_git_blame_provenance_sync_commands_are_removed(tmp_path: Path) -> None:
+    with pytest.raises(SystemExit) as exc_info:
+        dataset_main(["--repo-root", str(tmp_path), "sync-authors"])
+    assert exc_info.value.code == 2
 
-    monkeypatch.setattr(
-        "cli.dataset.sync_record_authors",
-        lambda repo: RecordAuthorSyncSummary(
-            scanned=3,
-            updated_record_ids=["rec_001", "rec_002"],
-            already_set_record_ids=["rec_003"],
-            missing_git_author_record_ids=["rec_004"],
-        ),
-    )
-
-    output = io.StringIO()
-    with redirect_stdout(output):
-        assert dataset_main(["--repo-root", str(tmp_path), "sync-authors"]) == 0
-
-    captured = output.getvalue()
-    assert "Synced record authors scanned=3 updated=2 already_set=1" in captured
-    assert "sample_updated_record_ids=rec_001, rec_002" in captured
-    assert "sample_missing_git_author_record_ids=rec_004" in captured
-
-
-def test_sync_rated_by_cli_reports_summary(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    repo = StorageRepo(tmp_path)
-    repo.ensure_layout()
-
-    monkeypatch.setattr(
-        "cli.dataset.sync_record_rated_by",
-        lambda repo: RecordRatedBySyncSummary(
-            scanned=3,
-            updated_record_ids=["rec_010", "rec_011"],
-            unchanged_record_ids=["rec_012"],
-            missing_git_author_record_ids=["rec_013"],
-        ),
-    )
-
-    output = io.StringIO()
-    with redirect_stdout(output):
-        assert dataset_main(["--repo-root", str(tmp_path), "sync-rated-by"]) == 0
-
-    captured = output.getvalue()
-    assert "Synced record rated_by scanned=3 updated=2 unchanged=1" in captured
-    assert "sample_updated_record_ids=rec_010, rec_011" in captured
-    assert "sample_missing_git_author_record_ids=rec_013" in captured
+    with pytest.raises(SystemExit) as exc_info:
+        dataset_main(["--repo-root", str(tmp_path), "sync-rated-by"])
+    assert exc_info.value.code == 2
 
 
 def test_supercategory_cli_commands_cover_list_mutation_and_delete(tmp_path: Path) -> None:

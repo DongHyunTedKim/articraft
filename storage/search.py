@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any
 
 from storage.collections import CollectionStore
+from storage.records_index import load_records_index
 from storage.repo import StorageRepo
 from storage.revisions import active_prompt_path
 
@@ -109,6 +110,10 @@ class SearchIndex:
         )
         latest_mtime_ns = self._max_mtime_ns(
             latest_mtime_ns,
+            self._path_mtime_ns(self.repo.layout.records_index_path),
+        )
+        latest_mtime_ns = self._max_mtime_ns(
+            latest_mtime_ns,
             self._path_mtime_ns(self.repo.layout.categories_root),
         )
         for category_path in self.repo.layout.categories_root.glob("*/category.json"):
@@ -180,6 +185,65 @@ class SearchIndex:
         workbench_entries = self._load_workbench_entries()
         categories = self._load_categories()
         documents: list[dict[str, Any]] = []
+        indexed_record_ids: set[str] = set()
+        records_index = load_records_index(self.repo)
+        if records_index:
+            for row in records_index:
+                record_id = str(row.get("record_id") or "")
+                if not record_id:
+                    continue
+                indexed_record_ids.add(record_id)
+                collections = row.get("collections")
+                collection_names = (
+                    {str(item) for item in collections} if isinstance(collections, list) else set()
+                )
+                category_slug = str(row.get("category_slug") or "")
+                category = categories.get(category_slug, {})
+                workbench = workbench_entries.get(record_id, {})
+                title = str(row.get("title") or record_id)
+                label = str(workbench.get("label") or "")
+                tags = str(workbench.get("tags") or "")
+                category_title = str(row.get("category_title") or category.get("title") or "")
+                dataset_id = str(row.get("dataset_id") or "")
+                prompt_text = str(row.get("prompt_preview") or "")
+
+                title_field = _field_document(title)
+                label_field = _field_document(label)
+                tags_field = _field_document(tags)
+                category_slug_field = _field_document(category_slug)
+                category_title_field = _field_document(category_title)
+                record_id_field = _field_document(record_id)
+                dataset_id_field = _field_document(dataset_id)
+                prompt_field = _field_document(prompt_text)
+
+                documents.append(
+                    {
+                        "record_id": record_id,
+                        "run_id": str(row.get("run_id") or ""),
+                        "created_at": str(row.get("created_at") or ""),
+                        "in_workbench": record_id in workbench_entries
+                        or "workbench" in collection_names,
+                        "in_dataset": bool(dataset_id) or "dataset" in collection_names,
+                        "title": title_field,
+                        "label": label_field,
+                        "tags": tags_field,
+                        "category_slug": category_slug_field,
+                        "category_title": category_title_field,
+                        "record_id_field": record_id_field,
+                        "dataset_id": dataset_id_field,
+                        "prompt_full": prompt_field,
+                        "all_tokens": _unique_tokens(
+                            title_field["tokens"],
+                            label_field["tokens"],
+                            tags_field["tokens"],
+                            category_slug_field["tokens"],
+                            category_title_field["tokens"],
+                            record_id_field["tokens"],
+                            dataset_id_field["tokens"],
+                            prompt_field["tokens"],
+                        ),
+                    }
+                )
 
         records_root = self.repo.layout.records_root
         if records_root.exists():
@@ -188,6 +252,8 @@ class SearchIndex:
             record_dirs = []
 
         for record_dir in record_dirs:
+            if record_dir.name in indexed_record_ids:
+                continue
             record = self.repo.read_json(record_dir / "record.json")
             if not isinstance(record, dict):
                 continue

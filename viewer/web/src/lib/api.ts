@@ -5,6 +5,7 @@ import type {
   DatasetEntry,
   DeleteStagingResult,
   DeleteRecordResult,
+  HydrateRecordResult,
   OpenRecordFolderResult,
   OpenStagingFolderResult,
   RecordHistory,
@@ -142,6 +143,12 @@ export async function fetchRecordSummary(recordId: string): Promise<RecordSummar
 
 export async function fetchRecordHistory(recordId: string): Promise<RecordHistory> {
   return fetchJson<RecordHistory>(`/api/records/${encodeURIComponent(recordId)}/history`);
+}
+
+export async function hydrateRecord(recordId: string): Promise<HydrateRecordResult> {
+  return fetchJson<HydrateRecordResult>(`/api/records/${encodeURIComponent(recordId)}/hydrate`, {
+    method: "POST",
+  });
 }
 
 export async function browseRecords(params: {
@@ -377,7 +384,7 @@ export async function fetchRunDetail(runId: string): Promise<RunDetail> {
 export async function fetchRecordFile(recordId: string, filePath: string): Promise<string> {
   const response = await fetch(`/api/records/${encodeURIComponent(recordId)}/files/${filePath}`);
   if (!response.ok) {
-    throw new Error(await readErrorMessage(response));
+    throw new HttpError(response.status, await readErrorMessage(response));
   }
   return response.text();
 }
@@ -406,7 +413,7 @@ export async function fetchRecordTextFile(
 export async function fetchRecordTraceFile(recordId: string, filePath: string): Promise<string> {
   const response = await fetch(`/api/records/${encodeURIComponent(recordId)}/traces/${filePath}`);
   if (!response.ok) {
-    throw new Error(await readErrorMessage(response));
+    throw new HttpError(response.status, await readErrorMessage(response));
   }
   return response.text();
 }

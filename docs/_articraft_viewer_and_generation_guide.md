@@ -161,4 +161,367 @@ uv run python data/local/backfill_costs.py
 ```
 *이 명령을 실행하면 누락된 레코드들을 스캔하여 `cost.json` 생성 및 메타데이터 갱신을 자동으로 처리해 줍니다.*
 
+---
+
+### 📦 E. 파일별 전체 소스 코드 가이드 (복사/붙여넣기용)
+
+타 Windows PC에서 이 설정을 새로 구성할 때는 아래의 코드 블록을 복사하여 `data/local/` 폴더 내에 해당하는 이름의 파일로 저장하십시오.
+
+#### **1. [cost_override.json](file:///Users/ted/Documents/GitHub/articraft/data/local/cost_override.json)**
+```json
+{
+  "openrouter": {
+    "openai/gpt-5.5": {
+      "input_uncached": 5.00,
+      "input_cached": 0.00,
+      "output": 30.00
+    },
+    "openai/gpt-5.4": {
+      "input_uncached": 2.50,
+      "input_cached": 0.00,
+      "output": 15.00
+    },
+    "openai/gpt-5.3": {
+      "input_uncached": 1.75,
+      "input_cached": 0.00,
+      "output": 14.00
+    },
+    "openai/gpt-5.2": {
+      "input_uncached": 1.75,
+      "input_cached": 0.00,
+      "output": 14.00
+    },
+    "openai/gpt-5.1": {
+      "input_uncached": 1.25,
+      "input_cached": 0.00,
+      "output": 10.00
+    },
+    "openai/gpt-5": {
+      "input_uncached": 1.25,
+      "input_cached": 0.00,
+      "output": 10.00
+    },
+    "anthropic/claude-opus-4-7": {
+      "input_uncached": 5.00,
+      "input_cached": 0.00,
+      "output": 25.00
+    },
+    "anthropic/claude-opus-4.7": {
+      "input_uncached": 5.00,
+      "input_cached": 0.00,
+      "output": 25.00
+    },
+    "anthropic/claude-sonnet-4-6": {
+      "input_uncached": 3.00,
+      "input_cached": 0.00,
+      "output": 15.00
+    },
+    "anthropic/claude-sonnet-4.6": {
+      "input_uncached": 3.00,
+      "input_cached": 0.00,
+      "output": 15.00
+    },
+    "anthropic/claude-haiku-4-5": {
+      "input_uncached": 1.00,
+      "input_cached": 0.00,
+      "output": 5.00
+    },
+    "anthropic/claude-haiku-4.5": {
+      "input_uncached": 1.00,
+      "input_cached": 0.00,
+      "output": 5.00
+    },
+    "google/gemini-3-pro": {
+      "input_uncached": 2.00,
+      "input_cached": 2.00,
+      "output": 12.00
+    },
+    "google/gemini-3.5-flash": {
+      "input_uncached": 1.50,
+      "input_cached": 0.15,
+      "output": 9.00
+    },
+    "google/gemini-3-flash": {
+      "input_uncached": 0.50,
+      "input_cached": 0.05,
+      "output": 3.00
+    }
+  }
+}
+```
+
+#### **2. [run_local.py](file:///Users/ted/Documents/GitHub/articraft/data/local/run_local.py)**
+```python
+#!/usr/bin/env python3
+import sys
+import json
+from pathlib import Path
+
+# Insert project root path to sys.path to resolve imports correctly
+project_root = Path(__file__).resolve().parents[2]
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
+
+# Load agent.cost module to monkey patch it
+import agent.cost
+
+original_pricing_fn = agent.cost.pricing_for_provider_model
+
+def local_pricing_for_provider_model(provider: str, model_id: str) -> dict[str, float] | None:
+    # Resolve absolute path to local override pricing JSON
+    override_path = project_root / "data" / "local" / "cost_override.json"
+    if override_path.exists():
+        try:
+            with open(override_path, "r", encoding="utf-8") as f:
+                overrides = json.load(f)
+                provider_key = provider.strip().lower()
+                if provider_key in overrides and model_id in overrides[provider_key]:
+                    return overrides[provider_key][model_id]
+        except Exception:
+            pass
+    # Fallback to original vanilla function
+    return original_pricing_fn(provider, model_id)
+
+# Perform runtime patching (monkey patch)
+agent.cost.pricing_for_provider_model = local_pricing_for_provider_model
+
+# Execute the vanilla articraft entry point
+from cli.main import main
+
+if __name__ == "__main__":
+    sys.exit(main())
+```
+
+#### **3. [backfill_costs.py](file:///Users/ted/Documents/GitHub/articraft/data/local/backfill_costs.py)**
+```python
+#!/usr/bin/env python3
+import sys
+import json
+import os
+from pathlib import Path
+
+# Setup project root import path
+project_root = Path(__file__).resolve().parents[2]
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
+
+import zstandard as zstd
+import agent.cost
+from agent.cost import calculate_cost, pricing_for_provider_model, CostBreakdown, _breakdown_dict
+
+# Apply same local monkey patch for OpenRouter pricing if available
+original_pricing_fn = agent.cost.pricing_for_provider_model
+
+def local_pricing_for_provider_model(provider: str, model_id: str) -> dict[str, float] | None:
+    override_path = project_root / "data" / "local" / "cost_override.json"
+    if override_path.exists():
+        try:
+            with open(override_path, "r", encoding="utf-8") as f:
+                overrides = json.load(f)
+                provider_key = provider.strip().lower()
+                if provider_key in overrides and model_id in overrides[provider_key]:
+                    return overrides[provider_key][model_id]
+        except Exception:
+            pass
+    return original_pricing_fn(provider, model_id)
+
+agent.cost.pricing_for_provider_model = local_pricing_for_provider_model
+
+
+def find_usage_recursive(obj):
+    """Recursively search for a dictionary containing 'usage' with token fields."""
+    if isinstance(obj, dict):
+        if "usage" in obj and isinstance(obj["usage"], dict) and "prompt_tokens" in obj["usage"]:
+            return obj["usage"]
+        for k, v in obj.items():
+            res = find_usage_recursive(v)
+            if res:
+                return res
+    elif isinstance(obj, list):
+        for item in obj:
+            res = find_usage_recursive(item)
+            if res:
+                return res
+    return None
+
+
+def main():
+    records_dir = project_root / "data" / "records"
+    if not records_dir.exists():
+        print("Records directory not found.")
+        sys.exit(1)
+
+    updated_count = 0
+
+    for record_path in records_dir.iterdir():
+        if not record_path.is_dir() or record_path.name.startswith("."):
+            continue
+
+        record_json_path = record_path / "record.json"
+        if not record_json_path.exists():
+            continue
+
+        try:
+            with open(record_json_path, "r", encoding="utf-8") as f:
+                record_data = json.load(f)
+        except Exception as e:
+            print(f"Error reading {record_json_path}: {e}")
+            continue
+
+        # Check if cost_json is missing (null or empty)
+        artifacts = record_data.get("artifacts", {})
+        cost_json_field = artifacts.get("cost_json")
+
+        if cost_json_field is not None and cost_json_field != "":
+            # Cost already populated
+            continue
+
+        provider = record_data.get("provider")
+        model_id = record_data.get("model_id")
+        active_rev = record_data.get("active_revision_id", "rev_000001")
+
+        if not provider or not model_id:
+            print(f"Skipping {record_path.name}: provider or model_id missing.")
+            continue
+
+        # Resolve pricing
+        pricing = agent.cost.pricing_for_provider_model(provider, model_id)
+        if not pricing:
+            print(f"Skipping {record_path.name}: No pricing config found for {provider}/{model_id}.")
+            continue
+
+        # Look for trajectory log
+        rev_path = record_path / "revisions" / active_rev
+        trajectory_zst_path = rev_path / "traces" / "trajectory.jsonl.zst"
+
+        if not trajectory_zst_path.exists():
+            print(f"Skipping {record_path.name}: No trajectory log found at {trajectory_zst_path.relative_to(project_root)}")
+            continue
+
+        print(f"Processing {record_path.name} ({provider}/{model_id})...")
+
+        # Parse trajectory to extract usages
+        dctx = zstd.ZstdDecompressor()
+        usages = []
+
+        try:
+            with open(trajectory_zst_path, "rb") as fh:
+                with dctx.stream_reader(fh) as reader:
+                    decompressed = reader.read().decode("utf-8")
+                    for line_idx, line in enumerate(decompressed.splitlines()):
+                        if not line.strip():
+                            continue
+                        try:
+                            line_data = json.loads(line)
+                            usage = find_usage_recursive(line_data)
+                            if usage:
+                                usages.append(usage)
+                        except Exception as le:
+                            print(f"  Line {line_idx} parse warning: {le}")
+        except Exception as e:
+            print(f"  Error decompressing/reading trajectory: {e}")
+            continue
+
+        if not usages:
+            print("  No LLM token usage found in trajectory.")
+            continue
+
+        # Calculate costs per turn
+        turn_breakdowns = []
+        total_prompt = 0
+        total_cached = 0
+        total_candidates = 0
+        total_tokens = 0
+
+        for usage in usages:
+            # Normalize fields
+            prompt_tokens = usage.get("prompt_tokens", 0)
+            cached_tokens = usage.get("cached_tokens", 0)
+            candidates_tokens = usage.get("candidates_tokens", usage.get("completion_tokens", 0))
+            tot_tokens = usage.get("total_tokens", prompt_tokens + candidates_tokens)
+
+            usage_norm = {
+                "prompt_tokens": prompt_tokens,
+                "cached_tokens": cached_tokens,
+                "candidates_tokens": candidates_tokens,
+                "total_tokens": tot_tokens,
+            }
+
+            breakdown = calculate_cost(usage_norm, pricing)
+            turn_breakdowns.append(breakdown)
+
+            total_prompt += prompt_tokens
+            total_cached += cached_tokens
+            total_candidates += candidates_tokens
+            total_tokens += tot_tokens
+
+        # Create total cumulative breakdown
+        total_breakdown = CostBreakdown(
+            prompt_tokens=total_prompt,
+            cached_tokens=total_cached,
+            candidates_tokens=total_candidates,
+            total_tokens=total_tokens
+        )
+        total_breakdown = calculate_cost(
+            {
+                "prompt_tokens": total_prompt,
+                "cached_tokens": total_cached,
+                "candidates_tokens": total_candidates,
+                "total_tokens": total_tokens
+            },
+            pricing
+        )
+
+        # Build cost.json payload
+        cost_json_data = {
+            "model_id": model_id,
+            "total": _breakdown_dict(total_breakdown),
+            "pricing": pricing,
+            "turns": [_breakdown_dict(tb) for tb in turn_breakdowns]
+        }
+
+        # Write cost.json
+        cost_json_dest = rev_path / "cost.json"
+        try:
+            with open(cost_json_dest, "w", encoding="utf-8") as f:
+                json.dump(cost_json_data, f, indent=2)
+            print(f"  Wrote {cost_json_dest.relative_to(project_root)}")
+        except Exception as e:
+            print(f"  Failed to write cost.json: {e}")
+            continue
+
+        # Update record.json
+        record_data["artifacts"]["cost_json"] = f"revisions/{active_rev}/cost.json"
+        try:
+            with open(record_json_path, "w", encoding="utf-8") as f:
+                json.dump(record_data, f, indent=2)
+            print(f"  Updated {record_json_path.relative_to(project_root)}")
+        except Exception as e:
+            print(f"  Failed to update record.json: {e}")
+            continue
+
+        # Update revision.json
+        revision_json_path = rev_path / "revision.json"
+        if revision_json_path.exists():
+            try:
+                with open(revision_json_path, "r", encoding="utf-8") as f:
+                    rev_data = json.load(f)
+                rev_data["artifacts"]["cost_json"] = f"revisions/{active_rev}/cost.json"
+                with open(revision_json_path, "w", encoding="utf-8") as f:
+                    json.dump(rev_data, f, indent=2)
+                print(f"  Updated {revision_json_path.relative_to(project_root)}")
+            except Exception as e:
+                print(f"  Failed to update revision.json: {e}")
+                continue
+
+        updated_count += 1
+
+    print(f"\nDone. Successfully backfilled costs for {updated_count} records.")
+
+
+if __name__ == "__main__":
+    main()
+```
+
+
 

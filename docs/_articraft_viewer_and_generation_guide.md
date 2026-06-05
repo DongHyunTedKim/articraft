@@ -93,3 +93,72 @@ graph TD
     A["1. 에셋 생성 (Inference) <br> uv run articraft generate '프롬프트'"] --> B["2. 렌더 캐시 컴파일 (Compile) <br> uv run articraft compile-all"]
     B --> C["3. 대시보드 접속 <br> http://127.0.0.1:5173"]
 ```
+
+---
+
+## 🛠️ 부록: 로컬 가격 산정 (Cost Override) 및 래퍼 실행
+
+원작자의 소스 코드를 완전히 순정(Vanilla) 상태로 유지하면서, 로컬 환경에서 OpenRouter 등 특정 프로바이더/모델에 대해 커스텀 요율을 강제로 적용하고 싶을 때 사용하는 방법입니다.
+
+이 기능은 `.gitignore`에 등록되어 외부로 노출되지 않는 로컬 디렉토리(`data/local/`)에 격리된 설정 및 래퍼 스크립트를 통해 작동합니다.
+
+### A. 커스텀 가격 설정 파일 (`data/local/cost_override.json`)
+가격 산정 요율을 아래 형식의 JSON 구조로 정의하여 이 파일에 기록합니다.
+
+```json
+{
+  "openrouter": {
+    "openai/gpt-5.5": {
+      "input_uncached": 5.00,
+      "input_cached": 0.00,
+      "output": 30.00
+    },
+    "anthropic/claude-opus-4.7": {
+      "input_uncached": 5.00,
+      "input_cached": 0.00,
+      "output": 25.00
+    },
+    "google/gemini-3.5-flash": {
+      "input_uncached": 1.50,
+      "input_cached": 0.15,
+      "output": 9.00
+    }
+  }
+}
+```
+
+*   **주요 설정 항목**:
+    *   `input_uncached`: 캐시되지 않은 입력 토큰 1백만 개당 비용 (USD)
+    *   `input_cached`: Context Caching 히트된 입력 토큰 1백만 개당 비용 (USD)
+    *   `output`: 출력 토큰 1백만 개당 비용 (USD)
+    *   `prompt_tier_threshold_tokens` (선택): 고컨텍스트 임계값 기준 토큰 수
+    *   `input_uncached_above_threshold` / `input_cached_above_threshold` / `output_above_threshold` (선택): 임계값 초과 시의 비용 (USD)
+
+### B. 로컬 전용 래퍼를 통한 실행 (`data/local/run_local.py`)
+`run_local.py`는 실행 시점에만 가격 매칭 함수를 커스텀 JSON 가격표를 읽도록 런타임 몽키 패치(Monkey Patching)를 수행하고, 실제 CLI 명령은 동일하게 동작시킵니다. 
+
+기존 `uv run articraft ...` 명령어 대신 앞부분을 다음과 같이 래퍼 스크립트로 대체하여 실행합니다.
+
+```bash
+# [Mac/Linux]
+uv run data/local/run_local.py generate "prompt text"
+uv run data/local/run_local.py status
+
+# [Windows]
+uv run python data/local/run_local.py generate "prompt text"
+uv run python data/local/run_local.py status
+```
+
+### C. 누락된 기존 레코드 가격 정보 일괄 정산 (`data/local/backfill_costs.py`)
+기존에 가격 산정이 누적되지 않고 누락된(또는 0원 처리된) 생성 레코드들의 경우, 각 레코드 폴더의 `traces/trajectory.jsonl.zst` 압축 로그를 분석하여 가격을 재계산한 후 일괄 기입해 주는 백필 도구입니다.
+
+```bash
+# [Mac/Linux]
+uv run data/local/backfill_costs.py
+
+# [Windows]
+uv run python data/local/backfill_costs.py
+```
+*이 명령을 실행하면 누락된 레코드들을 스캔하여 `cost.json` 생성 및 메타데이터 갱신을 자동으로 처리해 줍니다.*
+
+

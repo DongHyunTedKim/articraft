@@ -289,6 +289,7 @@ export function useThreeScene(
     return () => {
       setSceneReady(false);
       cancelAnimationFrame(frameIdRef.current);
+      frameIdRef.current = 0;
       resizeObserver.disconnect();
       controls.removeEventListener('change', invalidate);
       controls.dispose();

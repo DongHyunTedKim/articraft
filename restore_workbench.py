@@ -1,5 +1,6 @@
 import json
 import os
+import subprocess
 
 # 12 Target workbench records that were unlocked for transfer
 target_dirs = [
@@ -46,5 +47,22 @@ for d in target_dirs:
         print(f"Error updating {gitignore_path}: {e}")
 
 print("\nRestoration complete!")
+
+print("Removing restored records from Git tracking index (keeping local files)...")
+for d in target_dirs:
+    record_dir = os.path.join("data", "records", d)
+    try:
+        # Run git rm --cached -r to untrack the record files
+        subprocess.run(
+            ["git", "rm", "--cached", "-r", record_dir],
+            check=False,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        print(f"-> Untracked from git: {record_dir}")
+    except Exception as e:
+        print(f"Failed to untrack {record_dir}: {e}")
+
+print("\nRestoration and untracking complete!")
 print("Please run 'git status' to ensure that the record directories are no longer tracked.")
 print("You can now safely delete this 'restore_workbench.py' script.")

@@ -49,7 +49,6 @@ from agent.tools import (
     build_tool_registry,
 )
 from agent.tools.base import ToolResult
-from agent.tools.code_region import extract_editable_code
 from agent.traces import TraceWriter
 from agent.tui.single_run import SingleRunDisplay
 from agent.workspace_docs import build_virtual_workspace
@@ -61,6 +60,7 @@ logger.setLevel(logging.INFO)
 CONSOLE = Console()
 _FIND_EXAMPLES_SKIPPED_CONTENT = "{Skipped: full content already returned earlier in this run.}"
 MAX_CONSECUTIVE_NO_ACTION_TURNS = 3
+NO_ACTION_ESCALATION_STREAK = 2
 
 
 def _minimal_scaffold_text(
@@ -377,11 +377,6 @@ class ArticraftAgent:
             "_seen_baseline_qc_guidance_sigs",
             set(),
         )
-        injector._seen_compile_repair_guidance_sigs = getattr(
-            self,
-            "_seen_compile_repair_guidance_sigs",
-            set(),
-        )
         injector._seen_api_error_guidance_sigs = getattr(
             self,
             "_seen_api_error_guidance_sigs",
@@ -424,6 +419,61 @@ class ArticraftAgent:
         if self.trace_writer:
             self.trace_writer.write_message(msg)
 
+    def _append_no_action_recovery_reminder(
+        self,
+        conversation: list[dict],
+        *,
+        consecutive_no_action_turns: int,
+        diagnostics: dict[str, Any] | None,
+    ) -> bool:
+        if consecutive_no_action_turns < NO_ACTION_ESCALATION_STREAK:
+            if self._latest_code_is_fresh():
+                logger.info(
+                    "No-action response after fresh compile; requesting visible final response."
+                )
+                self._append_final_response_required_reminder(conversation)
+            else:
+                logger.info("No-action response before fresh compile; requesting compile.")
+                self._append_compile_required_reminder(conversation)
+            return False
+
+        diagnostic_summary = self._format_provider_diagnostic_summary(diagnostics)
+        diagnostic_line = (
+            f" Provider diagnostics: {diagnostic_summary}." if diagnostic_summary else ""
+        )
+        if self._latest_code_is_fresh():
+            required_tag = "final_response_required"
+            compile_line = "The latest code has already compiled successfully."
+            action_line = (
+                "You must now either call an action tool such as `apply_patch`, `replace`, "
+                "or `write_file`, or return a visible final response if no further work is "
+                "needed."
+            )
+        else:
+            required_tag = "compile_required"
+            compile_line = "No fresh successful compile exists for the latest code."
+            action_line = (
+                "You must now call an action tool such as `apply_patch`, `replace`, or "
+                "`write_file` to change the code, then call `compile_model`. Do not return a "
+                "final response until the latest code has compiled successfully."
+            )
+        msg = {
+            "role": "user",
+            "content": (
+                f"<{required_tag}>\n"
+                "Your previous response produced no visible text and no tool calls."
+                f"{diagnostic_line}\n"
+                "Do not continue with reasoning-only output.\n"
+                f"{action_line}\n"
+                f"{compile_line}\n"
+                f"</{required_tag}>"
+            ),
+        }
+        conversation.append(msg)
+        if self.trace_writer:
+            self.trace_writer.write_message(msg)
+        return True
+
     def _scan_current_code_contracts(self):
         return self._ensure_guidance_injector()._scan_current_code_contracts()
 
@@ -457,19 +507,6 @@ class ArticraftAgent:
         tool_results: list[ToolResult],
     ) -> None:
         self._ensure_guidance_injector().maybe_inject_code_contract_guidance(
-            conversation,
-            tool_calls=tool_calls,
-            tool_results=tool_results,
-        )
-
-    def _maybe_inject_compile_repair_guidance(
-        self,
-        conversation: list[dict],
-        *,
-        tool_calls: list[dict],
-        tool_results: list[ToolResult],
-    ) -> None:
-        self._ensure_guidance_injector().maybe_inject_compile_repair_guidance(
             conversation,
             tool_calls=tool_calls,
             tool_results=tool_results,
@@ -690,6 +727,9 @@ class ArticraftAgent:
         reason = incomplete_details.get("reason") if isinstance(incomplete_details, dict) else None
         if isinstance(reason, str) and reason:
             parts.append(f"reason={reason}")
+        response_shape = diagnostics.get("response_shape")
+        if isinstance(response_shape, str) and response_shape:
+            parts.append(f"response_shape={response_shape}")
         return " ".join(parts)
 
     def _tool_call_name(self, tool_call: dict) -> str:
@@ -876,18 +916,18 @@ class ArticraftAgent:
         if func_name == "replace":
             old_string_key = "old_string"
             try:
-                editable = extract_editable_code(Path(self.file_path).read_text(encoding="utf-8"))
+                model_code = Path(self.file_path).read_text(encoding="utf-8")
             except Exception:
-                editable = None
+                model_code = None
             if (
                 func_args.get(old_string_key) == ""
-                and editable is not None
-                and editable.strip() != ""
+                and model_code is not None
+                and model_code.strip() != ""
             ):
                 result = ToolResult(
                     error=(
-                        "old_string cannot be empty unless the editable code section is empty. "
-                        'Call `read_file(path="model.py")` to copy exact current editable text and retry.'
+                        "old_string cannot be empty unless model.py is empty. "
+                        'Call `read_file(path="model.py")` to copy exact current file text and retry.'
                     ),
                     tool_call_id=tool_id,
                 )
@@ -903,17 +943,17 @@ class ArticraftAgent:
                     tool_message["thought_signature"] = thought_signature
                 return result, tool_message
             if (
-                editable is not None
-                and editable.strip() == ""
+                model_code is not None
+                and model_code.strip() == ""
                 and func_args.get(old_string_key) != ""
             ):
                 result = ToolResult(
                     error=(
-                        "Editable code section is empty. Initialize it with "
+                        "model.py is empty. Initialize it with "
                         "`write_file(content=...)` or with "
                         f"{func_name} using "
                         'old_string="" and new_string containing the initial '
-                        "build_object_model() and run_tests() implementation."
+                        "imports, build_object_model(), run_tests(), and object_model assignment."
                     ),
                     tool_call_id=tool_id,
                 )
@@ -1141,6 +1181,7 @@ class ArticraftAgent:
         llm_calls = 0
         tool_call_count = 0
         consecutive_no_action_turns = 0
+        no_action_escalation_sent = False
         last_provider_diagnostics: dict[str, Any] | None = None
 
         while completed_turns < self.max_turns:
@@ -1343,7 +1384,10 @@ class ArticraftAgent:
             if is_no_action_response:
                 completed_turns += 1
                 consecutive_no_action_turns += 1
-                if consecutive_no_action_turns >= MAX_CONSECUTIVE_NO_ACTION_TURNS:
+                if (
+                    consecutive_no_action_turns >= MAX_CONSECUTIVE_NO_ACTION_TURNS
+                    and no_action_escalation_sent
+                ):
                     message = (
                         "LLM produced "
                         f"{consecutive_no_action_turns} consecutive no-action responses "
@@ -1371,18 +1415,19 @@ class ArticraftAgent:
                         ),
                         usage=usage_totals or None,
                     )
-                if self._latest_code_is_fresh():
-                    logger.info(
-                        "No-action response after fresh compile; requesting visible final response."
+                no_action_escalation_sent = (
+                    self._append_no_action_recovery_reminder(
+                        conversation,
+                        consecutive_no_action_turns=consecutive_no_action_turns,
+                        diagnostics=last_provider_diagnostics,
                     )
-                    self._append_final_response_required_reminder(conversation)
-                else:
-                    logger.info("No-action response before fresh compile; requesting compile.")
-                    self._append_compile_required_reminder(conversation)
+                    or no_action_escalation_sent
+                )
                 self.display.end_turn(success=True)
                 continue
 
             consecutive_no_action_turns = 0
+            no_action_escalation_sent = False
             completed_turns += 1
 
             termination_message = self._termination_message(text, tool_calls)
@@ -1429,11 +1474,6 @@ class ArticraftAgent:
                     logger.warning("Tool %s failed: %s", func_name, result.error)
 
             self._maybe_inject_edit_code_guidance(
-                conversation,
-                tool_calls=tool_calls,
-                tool_results=turn_tool_results,
-            )
-            self._maybe_inject_compile_repair_guidance(
                 conversation,
                 tool_calls=tool_calls,
                 tool_results=turn_tool_results,

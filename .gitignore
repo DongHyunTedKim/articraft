@@ -213,10 +213,12 @@ cython_debug/
 .cursorindexingignore
 
 # Articraft record-local derived assets and transient run state
+# (this fork keeps canonical records tracked in git, unlike upstream)
 data/cache/
 data/local/
 data/records/*/model.urdf
 data/records/*/assets/
+data/records_manifest.jsonl
 performance/results/
 
 # Viewer frontend dependencies/build output

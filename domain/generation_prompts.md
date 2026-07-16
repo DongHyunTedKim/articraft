@@ -46,11 +46,13 @@ Status legend: `[ready]` dims+mass confirmed · `[proxy]` similar-model dims ·
 > carriers, right-hand control panel with power button and identification
 > button, left mounting ear with luggage-tag service label.
 
-### 5. dell-r760 `[ready]`
-> A Dell PowerEdge R760 2U rackmount server. 482 mm face, 86.8 mm (2U) tall,
-> 772 mm deep, 36.1 kg. Front: two rows of 2.5-inch hot-swap drive carriers
-> filling most of the face, right control bezel with power button and status
-> LEDs, both mounting ears with captive thumbscrews.
+### 5. dell-r760 `[ready]` — 레퍼런스 이미지가 베젤 장착 상태라 프롬프트 일치화(2026-07-16)
+> A Dell PowerEdge R760 2U rackmount server with its front bezel installed.
+> 482 mm face, 86.8 mm (2U) tall, 772 mm deep, 36.1 kg. Front: a black
+> perforated bezel with a large hexagonal-hole pattern and a centered DELL
+> logo, drive carrier LEDs faintly visible through the openings, a slim
+> left ear panel with status light strip, power button and ports on the
+> right ear panel.
 
 ### 6. hpe-dl380-gen10-8sff `[ready]`
 > An HPE ProLiant DL380 Gen10 2U rackmount server in the 8-bay SFF
@@ -84,11 +86,13 @@ Status legend: `[ready]` dims+mass confirmed · `[proxy]` similar-model dims ·
 
 ## Network switches
 
-### 11. arista-7010t-48 `[ready]`
+### 11. arista-7010t-48 `[ready]` — 이미지 대조로 포트 배열 수정(2026-07-16)
 > An Arista 7010T-48 1U rackmount access switch, shallow chassis: 445 mm
 > wide, 44 mm (1U) tall, only 254 mm deep, 4.6 kg. Front: 48 RJ45 copper
-> ports in four 12-port blocks with per-port link LEDs, four SFP+ uplink
-> cages on the right, small status LED column on the left.
+> ports in three 16-port groups (each two rows of eight) with per-port link
+> LEDs, four SFP+ uplink cages in a 2x2 block to their right, then console
+> and management RJ45 ports, USB, and a small status LED column at the far
+> right edge.
 
 ### 12. alcatel-os6450-48x `[ready]`
 > An Alcatel-Lucent OmniSwitch 6450-48X 1U rackmount switch. 440 mm wide,

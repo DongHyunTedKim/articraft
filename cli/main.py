@@ -148,6 +148,10 @@ def _run_generate(args: argparse.Namespace) -> int:
         argv.extend(["--tag", tag])
     if args.category:
         argv.extend(["--category", args.category])
+    if getattr(args, "qc_blurb", None):
+        argv.extend(["--qc-blurb", args.qc_blurb])
+    if getattr(args, "system_prompt", None):
+        argv.extend(["--system-prompt", args.system_prompt])
     return agent_runner.main(argv)
 
 
@@ -424,6 +428,16 @@ def _build_parser() -> argparse.ArgumentParser:
     _add_repo_root(generate)
     generate.add_argument("prompt")
     _add_generation_options(generate)
+    generate.add_argument(
+        "--qc-blurb",
+        default=None,
+        help="Path to a markdown QC checklist appended to the prompt as a final-pass checklist.",
+    )
+    generate.add_argument(
+        "--system-prompt",
+        default=None,
+        help="Path or generated prompt name overriding the default designer system prompt.",
+    )
     generate.set_defaults(func=_run_generate)
 
     draft = subparsers.add_parser("draft", help="Create a draft local library record.")

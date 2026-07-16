@@ -195,4 +195,5 @@ _DOC_PATH_ALIASES = {
     "sdk/_docs/cadquery/39d_cadquery_gears.md": "references/cadquery/gears.md",
     "sdk/_docs/cadquery/39b_cadquery_free_function.md": "references/cadquery/free-functions.md",
     "sdk/_docs/cadquery/39c_cadquery_api_ref.md": "references/cadquery/api-ref.md",
+    "sdk/_docs/domain/90_network_equipment.md": "references/domain/network-equipment.md",
 }

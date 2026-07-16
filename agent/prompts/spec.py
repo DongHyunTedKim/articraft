@@ -22,6 +22,7 @@ PROMPT_VARIANTS: tuple[PromptVariant, ...] = (
         sections=(
             SECTIONS_DIR / "designer_common.md",
             SECTIONS_DIR / "link_naming.md",
+            SECTIONS_DIR / "domain_network_equipment.md",
             SECTIONS_DIR / "provider_openai.md",
             SECTIONS_DIR / "sdk_base.md",
         ),
@@ -33,6 +34,7 @@ PROMPT_VARIANTS: tuple[PromptVariant, ...] = (
         sections=(
             SECTIONS_DIR / "designer_common.md",
             SECTIONS_DIR / "link_naming.md",
+            SECTIONS_DIR / "domain_network_equipment.md",
             SECTIONS_DIR / "provider_codex_cli.md",
             SECTIONS_DIR / "sdk_base.md",
         ),
@@ -44,6 +46,7 @@ PROMPT_VARIANTS: tuple[PromptVariant, ...] = (
         sections=(
             SECTIONS_DIR / "designer_common.md",
             SECTIONS_DIR / "link_naming.md",
+            SECTIONS_DIR / "domain_network_equipment.md",
             SECTIONS_DIR / "provider_gemini.md",
             SECTIONS_DIR / "sdk_base.md",
         ),
@@ -55,6 +58,7 @@ PROMPT_VARIANTS: tuple[PromptVariant, ...] = (
         sections=(
             SECTIONS_DIR / "designer_common.md",
             SECTIONS_DIR / "link_naming.md",
+            SECTIONS_DIR / "domain_network_equipment.md",
             SECTIONS_DIR / "provider_gemini.md",
             SECTIONS_DIR / "provider_openrouter_process.md",
             SECTIONS_DIR / "sdk_base.md",
@@ -67,6 +71,7 @@ PROMPT_VARIANTS: tuple[PromptVariant, ...] = (
         sections=(
             SECTIONS_DIR / "designer_common.md",
             SECTIONS_DIR / "link_naming.md",
+            SECTIONS_DIR / "domain_network_equipment.md",
             SECTIONS_DIR / "provider_gemini.md",
             SECTIONS_DIR / "provider_openrouter_process.md",
             SECTIONS_DIR / "sdk_base.md",
@@ -79,6 +84,7 @@ PROMPT_VARIANTS: tuple[PromptVariant, ...] = (
         sections=(
             SECTIONS_DIR / "designer_common.md",
             SECTIONS_DIR / "link_naming.md",
+            SECTIONS_DIR / "domain_network_equipment.md",
             SECTIONS_DIR / "provider_deepseek.md",
             SECTIONS_DIR / "provider_openrouter_process.md",
             SECTIONS_DIR / "sdk_base.md",

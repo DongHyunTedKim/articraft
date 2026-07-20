@@ -5,13 +5,35 @@ facility equipment. All values are SI meters unless noted. Values marked
 `(approx)` are working approximations pending field measurement; treat them as
 defaults, not hard constraints.
 
+## Two widths — read this before anything else
+
+Every rackmount unit has TWO widths, and vendor datasheets quote either one:
+
+- **Body width** (~`0.434`–`0.446` m): the chassis box that slides between
+  the rack rails. Cisco/HPE/Arista/Siemens datasheets quote this.
+- **Face width** (`0.4826` m exactly): body + bolted-on mounting ears,
+  spanning the 19-inch rack front. Dell datasheets quote this
+  ("width with rack latches").
+
+Rule: if the prompt gives a width **below 0.470 m, it is the BODY width** —
+keep the chassis at exactly that width and ADD mounting ears so the overall
+face reaches `0.4826` m. If the given width is ~`0.482` m it already
+includes the ears.
+
+## Prompt vs canon — priority rules
+
+- **Body dimensions (width/depth) and overall height: the prompt's measured
+  values win.** They are real-device measurements; do not round them to
+  canon values.
+- **Face/ear geometry: the canon wins.** Ears always bring the face to
+  `0.4826` m with hole columns `0.4651` m apart, regardless of body width.
+- Height nuance: nominal height is n × `0.04445` m (1U), but real units run
+  `0.001`–`0.002` m short for insertion clearance (e.g. a "1U" switch
+  measures `0.0429`–`0.044` m). **Keep the prompt's measured height**; only
+  fall back to n × `0.04445` when the prompt gives no height.
+
 ## Hard rules for rackmount equipment
 
-- The front face of a rack-mounted unit (including mounting ears) is exactly
-  `0.4826` m wide (19 inches, EIA-310).
-- Equipment height is an integer multiple of one rack unit `U = 0.04445` m.
-  Real units are typically built `0.0008` m short of the full multiple for
-  insertion clearance (e.g. a 1U chassis is ~`0.04365` m tall).
 - Mounting-ear hole columns are `0.4651` m apart, center to center.
 - The chassis body between the rack rails is at most `0.45085` m wide;
   `0.438` m is the common body width.

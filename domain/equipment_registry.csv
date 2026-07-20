@@ -1,42 +1,42 @@
-id,source,scope,category,vendor,model,width_m,height_m,depth_m,u_height,mass_kg,asset_format,asset_source,asset_location,price_usd,reference,note,quality_flags
-supermicro-sys1019d,real_equipment_oic_tb,include,server,Supermicro,SYS-1019D-16C-FHN13TP,0.438,0.043,0.381,1,11.34,,,,,notion-file:415c4bd0;notion:39d01c44dafb8012bfc8cf18e17da047,유사 모델 추정,
-dell-r770,real_equipment_oic_tb,include,server,Dell,PowerEdge R770,0.482,0.0868,0.802,2,28.53,,,,,notion-file:3c906f49;notion:39d01c44dafb801397faffb2023f7030,,
-secui-bluemax-nfg800,real_equipment_oic_tb,include,security_gateway,SECUI,BLUEMAX NFG 800 ED,0.438,0.044,0.432,1,,,,,,notion-file:68ae74df;notion:39d01c44dafb8020aaa1e316f9b311e2,유사 모델 추정 (NGF 510 데이터시트 기준 1U 438x432x44mm),dims_from_similar_model_ngf510;mass_missing;field_measure_pending
-hpe-dl360-gen10,real_equipment_oic_tb,include,server,HPE,ProLiant DL360 Gen10,0.4346,0.0429,0.707,1,16.78,,,,,notion-file:331adc9f;notion:39d01c44dafb8027b1fad49a080201b7,,
-dell-r6615,real_equipment_oic_tb,include,server,Dell,PowerEdge R6615,0.482,0.0428,0.772,1,20.4,,,,,notion-file:100986ad;notion:39d01c44dafb803dab38cb207142e6da,유사 모델 추정,
-hpe-lcd8500-console,real_equipment_oic_tb,include,rack_console,HPE,LCD8500 1U INTL,0.4361,0.0423,0.433,1,5.2,,,,,notion-file:71a27b4a;notion:39d01c44dafb80499469e61eb81bdbb8,슬라이드+접이식 LCD 복합 관절,
-wins-sniper-one-2300,real_equipment_oic_tb,include,ips,WiNS,Sniper ONE 2300,,,,,,,,,,notion-file:73232acc;notion:39d01c44dafb804b91b6c4807c56a666,물리 치수 비공개 - OIC TB 현장 실측 필요,dims_missing;no_public_spec;field_measure_required
-dell-r760,real_equipment_oic_tb,include,server,Dell,PowerEdge R760,0.482,0.0868,0.772,2,36.1,,,,,notion-file:ab061417;notion:39d01c44dafb805cab19fec649881642,,
-hpe-dl380-gen10-8sff,real_equipment_oic_tb,include,server,HPE,ProLiant DL380 Gen10 8SFF,0.4454,0.0873,0.6794,2,19.5,,,,,notion-file:b4dbaec4;notion:39d01c44dafb807e98e3e14b1c069b86,,
-hpe-dl380-gen10plus-a,real_equipment_oic_tb,include,server,HPE,ProLiant DL380 Gen10 Plus (config A),0.4454,0.0873,0.749,2,33.99,,,,,notion-file:0c46c49c;notion:39d01c44dafb8097a00bcdfeb1db9a2e,유사모델추정,dup_model_diff_depth
-arista-7010t-48,real_equipment_oic_tb,include,network_switch,Arista,7010T-48,0.445,0.044,0.254,1,4.6,,,,,notion-file:50cc64ca;notion:39d01c44dafb80a6ae01c421370796bc,,
-dell-r730,real_equipment_oic_tb,include,server,Dell,PowerEdge R730,0.444,0.0873,0.684,2,31.5,,,,,notion-file:8776beb3;notion:39d01c44dafb80a79f4dd6649d10528c,로드쇼 시연 장비(1층 실증센터),physical_access
-hpe-dl380-gen10plus-b,real_equipment_oic_tb,include,server,HPE,ProLiant DL380 Gen10 Plus (config B),0.4454,0.0873,0.71,2,28.77,,,,,notion-file:5a61084d;notion:39d01c44dafb80aab4dbca747e24b087,,dup_model_diff_depth
-alcatel-os6450-48x,real_equipment_oic_tb,include,network_switch,Alcatel-Lucent,OS6450-48X,0.44,0.044,0.391,1,6.6,,,,,notion-file:2b31fed6;notion:39d01c44dafb80b09b93d0a2e3099de8,,
-cisco-n9k-93180yc-ex,real_equipment_oic_tb,include,network_switch,Cisco,Nexus N9K-C93180YC-EX,0.439,0.044,0.571,1,7.8,,,,,notion-file:1652d3c4;notion:39d01c44dafb80c8a6b8f595670b334d,로드쇼 시연 장비(1층 실증센터),physical_access;mass_typo_kb_fixed
-csni-appinsight-2000r,real_equipment_oic_tb,include,web_firewall,MonitorApp,APPLICATION INSIGHT WAF (AIWAF-2000_Y20),0.438,0.088,0.598,2,15.2,,,,,notion-file:02c7d0dd;notion:39d01c44dafb80cda803fa54f32456b5,"씨에스엔아이는 리셀러, 제조사 모니터랩. 공개 스펙: 2U 438x598x88mm 15.2kg",dims_from_aiwaf2000_y20_public_spec
-dell-xr2,real_equipment_oic_tb,include,server,Dell,PowerEdge XR2,0.482,0.0428,0.611,1,13.0,,,,,notion-file:fa15e47e;notion:39d01c44dafb80d8a68ffd103c4e7fdc,,unit_typo_cmd_fixed
-arista-7280sr3-48yc8,real_equipment_oic_tb,include,network_switch,Arista,7280SR3-48YC8,0.4399,0.0435,0.467,1,9.18,,,,,notion-file:43c3ce6b;notion:39d01c44dafb80e19183e1fe04034657,,
-dell-unity-xt380,real_equipment_oic_tb,include,storage_array,Dell EMC,Unity XT 380,0.4445,0.0846,0.3302,2,20.23,,,,,notion-file:e0710c03;notion:39d01c44dafb80eda6cdc5726313334a,유사 모델 추정,
-mitac-ft83-4u-gpu,real_equipment_oic_tb,include,gpu_server,MiTAC,B7119F83V8E4HR-2T-NS (Thunder HX FT83),0.43942,0.17526,0.83058,4,39.3,,,,,notion-file:1eb3c826;notion:39d01c44dafb80ee985efab7baaadd36,로드쇼 시연 장비(1층 실증센터),physical_access;inches_converted;lbs_converted
-cg-server-rack-2010,free_3d_model,include,server_rack,,Server Rack (serverRack_2010),,,,,,zip,cgtrader,notion-attachment,,notion:39e01c44dafb801384bfe35601505145,,dims_missing
-siemens-6gk5334,free_3d_model,include,network_switch,,SIEMENS 6GK5334-5TS00-2AR3,0.446,0.0436,0.3748,1,8.0,glb,3dfindit,notion-attachment,,notion:39e01c44dafb801cb102d10fe6f58c66,,
-siemens-6gk5532,free_3d_model,include,network_switch,,SIEMENS 6GK5532-2SR00-3AR3,0.446,0.0436,0.3748,1,8.2,glb,3dfindit,notion-attachment,,notion:39e01c44dafb802285d4f96d53a96090,,
-cg-dell-poweredge-rack,free_3d_model,skip,rack_with_servers,,Data Server Rack Dell PowerEdge,,,,,,fbx,cgtrader,notion-attachment,,notion:39e01c44dafb802eb840c4ef4a88de5f,랙+서버 복합 | 제외: composite: 랙+서버 복합,excluded_2026-07-15
-cg-server-room-01,free_3d_model,skip,server_room,,Server Room 01_05,,,,,,glb,cgtrader,notion-attachment,,notion:39e01c44dafb803c9a76e4697d7b8bf0,서버실 전체,SKIP_scene_scope
-cg-juniper-ex4550,free_3d_model,include,network_switch,,Juniper EX4550,,,,,,skp,cgtrader,notion-attachment,,notion:39e01c44dafb8045973af8c0a1d3cc1d,,dims_missing
-cg-server-rack-4002422,free_3d_model,skip,rack_with_servers,,Server Rack (4002422),,,,,,fbx,cgtrader,notion-attachment,,notion:39e01c44dafb805b86f4c682bf069a82,랙+서버 복합 | 제외: composite: 랙+서버 복합,excluded_2026-07-15
-gc-rack-server-module,free_3d_model,include,rack_console,,Rack Server Module,,,,,,cad,grabcad,오프라인 전달 필요,,notion:39e01c44dafb809b9b00f1f0b0a8bdad,파일 업로드 불가,file_offline_only
-cg-storage-server-led,free_3d_model,include,storage_server,,Storage Server (LED ON),,,,,,blend,cgtrader,notion-attachment,,notion:39e01c44dafb80a59be2c456e11931e3,,dims_missing
-cg-juniper-9204,free_3d_model,include,network_switch,,Juniper 9204,,,,,,skp,cgtrader,notion-attachment,,notion:39e01c44dafb80b194f1ca186071704b,,dims_missing
-cg-hp-desktop,free_3d_model,skip,desktop,,HP Desktop,,,,,,fbx,cgtrader,notion-attachment,,notion:39e01c44dafb80cf9801e0cbb754b673,제외: 국사 장비 아님(데스크톱),dims_missing;excluded_2026-07-15
-gc-supercomputador,free_3d_model,skip,rack_with_servers,,Supercomputador,,,,,,iam,grabcad,notion-attachment,,notion:39e01c44dafb80d1818be2395e656c35,"랙+서버 복합, Inventor 포맷 | 제외: composite: 랙+서버 복합",needs_format_conversion;excluded_2026-07-15
-cg-juniper-ex3300,free_3d_model,include,network_switch,,Juniper EX3300,,,,,,skp,cgtrader,notion-attachment,,notion:39e01c44dafb80e0a945d518c6d5b837,,dims_missing
-paid-dell-rack-set,paid_3d_model,skip,rack_with_servers,,Data Server and Network Rack,,,,,,,cgtrader,onedrive,85.0,notion:39e01c44dafb8002a7ffcdacf031fda6,제외: composite: 랙+서버+네트워크 복합,excluded_2026-07-15
-paid-server-room-hd,paid_3d_model,skip,server_room,,Server Room HD,,,,,,,cgtrader,nas:PAI_SIM_DATA/3D_Model/Server_Room,9.5,notion:39e01c44dafb8028ad86e41703c9bd82,서버실 전체,SKIP_scene_scope
-paid-2u-server,paid_3d_model,include,server,,2U Server,,,,,,,cgtrader,onedrive,4.5,notion:39e01c44dafb803c88aecedde4ce7f3f,,
-paid-firewall-switch,paid_3d_model,skip,security_gateway,,Network Firewall and Switch,,,,,,,cgtrader,onedrive,19.5,notion:39e01c44dafb809faa0ee0caccb3b7c9,제외: 독립 장비 2대(방화벽형 소형+대형)가 한 자산에 묶임,excluded_2026-07-15
-paid-patch-panel-rack,paid_3d_model,include,patch_panel,,Network Patch Panel Rack,,,,,,,cgtrader,nas:PAI_SIM_DATA/3D_Model/Network_Patch_Panel,18.5,notion:39e01c44dafb80a19148fdfa01a2a65c,,
-paid-cisco-cat3750g48,paid_3d_model,include,network_switch,,Cisco Catalyst 3750G-48,,,,,,,cgtrader,onedrive,7.0,notion:39e01c44dafb80a7b199e4d25e94f765,,
-paid-cisco-cat3750x,paid_3d_model,include,network_switch,,Catalyst 3750 X Switch Router,,,,,,,cgtrader,onedrive,9.9,notion:39e01c44dafb80adb17dc4f487dd2b53,,
-paid-rackmount-switch,paid_3d_model,include,network_switch,,Rackmount Network Switch (low-poly),,,,,,,cgtrader,nas:PAI_SIM_DATA/3D_Model/Rackmount_Network_Switch,18.5,notion:39e01c44dafb80dd8515d39a986bf2f4,,
+id,source,scope,category,vendor,model,body_width_m,face_width_m,height_m,depth_m,u_height,mass_kg,asset_format,asset_source,asset_location,price_usd,reference,note,quality_flags
+supermicro-sys1019d,real_equipment_oic_tb,include,server,Supermicro,SYS-1019D-16C-FHN13TP,0.438,0.4826,0.043,0.381,1,11.34,,,,,notion-file:415c4bd0;notion:39d01c44dafb8012bfc8cf18e17da047,유사 모델 추정,
+dell-r770,real_equipment_oic_tb,include,server,Dell,PowerEdge R770,,0.482,0.0868,0.802,2,28.53,,,,,notion-file:3c906f49;notion:39d01c44dafb801397faffb2023f7030,,body_width_pending_field_measure
+secui-bluemax-nfg800,real_equipment_oic_tb,include,security_gateway,SECUI,BLUEMAX NFG 800 ED,0.438,0.4826,0.044,0.432,1,,,,,,notion-file:68ae74df;notion:39d01c44dafb8020aaa1e316f9b311e2,유사 모델 추정 (NGF 510 데이터시트 기준 1U 438x432x44mm),dims_from_similar_model_ngf510;mass_missing;field_measure_pending
+hpe-dl360-gen10,real_equipment_oic_tb,include,server,HPE,ProLiant DL360 Gen10,0.4346,0.4826,0.0429,0.707,1,16.78,,,,,notion-file:331adc9f;notion:39d01c44dafb8027b1fad49a080201b7,,
+dell-r6615,real_equipment_oic_tb,include,server,Dell,PowerEdge R6615,,0.482,0.0428,0.772,1,20.4,,,,,notion-file:100986ad;notion:39d01c44dafb803dab38cb207142e6da,유사 모델 추정,body_width_pending_field_measure
+hpe-lcd8500-console,real_equipment_oic_tb,include,rack_console,HPE,LCD8500 1U INTL,0.4361,0.4826,0.0423,0.433,1,5.2,,,,,notion-file:71a27b4a;notion:39d01c44dafb80499469e61eb81bdbb8,슬라이드+접이식 LCD 복합 관절,
+wins-sniper-one-2300,real_equipment_oic_tb,include,ips,WiNS,Sniper ONE 2300,,,,,,,,,,,notion-file:73232acc;notion:39d01c44dafb804b91b6c4807c56a666,물리 치수 비공개 - OIC TB 현장 실측 필요,dims_missing;no_public_spec;field_measure_required
+dell-r760,real_equipment_oic_tb,include,server,Dell,PowerEdge R760,,0.482,0.0868,0.772,2,36.1,,,,,notion-file:ab061417;notion:39d01c44dafb805cab19fec649881642,,body_width_pending_field_measure
+hpe-dl380-gen10-8sff,real_equipment_oic_tb,include,server,HPE,ProLiant DL380 Gen10 8SFF,0.4454,0.4826,0.0873,0.6794,2,19.5,,,,,notion-file:b4dbaec4;notion:39d01c44dafb807e98e3e14b1c069b86,,
+hpe-dl380-gen10plus-a,real_equipment_oic_tb,include,server,HPE,ProLiant DL380 Gen10 Plus (config A),0.4454,0.4826,0.0873,0.749,2,33.99,,,,,notion-file:0c46c49c;notion:39d01c44dafb8097a00bcdfeb1db9a2e,유사모델추정,dup_model_diff_depth
+arista-7010t-48,real_equipment_oic_tb,include,network_switch,Arista,7010T-48,0.445,0.4826,0.044,0.254,1,4.6,,,,,notion-file:50cc64ca;notion:39d01c44dafb80a6ae01c421370796bc,,
+dell-r730,real_equipment_oic_tb,include,server,Dell,PowerEdge R730,0.444,0.4826,0.0873,0.684,2,31.5,,,,,notion-file:8776beb3;notion:39d01c44dafb80a79f4dd6649d10528c,로드쇼 시연 장비(1층 실증센터),physical_access
+hpe-dl380-gen10plus-b,real_equipment_oic_tb,include,server,HPE,ProLiant DL380 Gen10 Plus (config B),0.4454,0.4826,0.0873,0.71,2,28.77,,,,,notion-file:5a61084d;notion:39d01c44dafb80aab4dbca747e24b087,,dup_model_diff_depth
+alcatel-os6450-48x,real_equipment_oic_tb,include,network_switch,Alcatel-Lucent,OS6450-48X,0.44,0.4826,0.044,0.391,1,6.6,,,,,notion-file:2b31fed6;notion:39d01c44dafb80b09b93d0a2e3099de8,,
+cisco-n9k-93180yc-ex,real_equipment_oic_tb,include,network_switch,Cisco,Nexus N9K-C93180YC-EX,0.439,0.4826,0.044,0.571,1,7.8,,,,,notion-file:1652d3c4;notion:39d01c44dafb80c8a6b8f595670b334d,로드쇼 시연 장비(1층 실증센터),physical_access;mass_typo_kb_fixed
+csni-appinsight-2000r,real_equipment_oic_tb,include,web_firewall,MonitorApp,APPLICATION INSIGHT WAF (AIWAF-2000_Y20),0.438,0.4826,0.088,0.598,2,15.2,,,,,notion-file:02c7d0dd;notion:39d01c44dafb80cda803fa54f32456b5,"씨에스엔아이는 리셀러, 제조사 모니터랩. 공개 스펙: 2U 438x598x88mm 15.2kg",dims_from_aiwaf2000_y20_public_spec
+dell-xr2,real_equipment_oic_tb,include,server,Dell,PowerEdge XR2,,0.482,0.0428,0.611,1,13.0,,,,,notion-file:fa15e47e;notion:39d01c44dafb80d8a68ffd103c4e7fdc,,unit_typo_cmd_fixed;body_width_pending_field_measure
+arista-7280sr3-48yc8,real_equipment_oic_tb,include,network_switch,Arista,7280SR3-48YC8,0.4399,0.4826,0.0435,0.467,1,9.18,,,,,notion-file:43c3ce6b;notion:39d01c44dafb80e19183e1fe04034657,,
+dell-unity-xt380,real_equipment_oic_tb,include,storage_array,Dell EMC,Unity XT 380,0.4445,0.4826,0.0846,0.3302,2,20.23,,,,,notion-file:e0710c03;notion:39d01c44dafb80eda6cdc5726313334a,유사 모델 추정,
+mitac-ft83-4u-gpu,real_equipment_oic_tb,include,gpu_server,MiTAC,B7119F83V8E4HR-2T-NS (Thunder HX FT83),0.43942,0.4826,0.17526,0.83058,4,39.3,,,,,notion-file:1eb3c826;notion:39d01c44dafb80ee985efab7baaadd36,로드쇼 시연 장비(1층 실증센터),physical_access;inches_converted;lbs_converted
+cg-server-rack-2010,free_3d_model,include,server_rack,,Server Rack (serverRack_2010),,,,,,,zip,cgtrader,notion-attachment,,notion:39e01c44dafb801384bfe35601505145,,dims_missing
+siemens-6gk5334,free_3d_model,include,network_switch,,SIEMENS 6GK5334-5TS00-2AR3,0.446,0.4826,0.0436,0.3748,1,8.0,glb,3dfindit,notion-attachment,,notion:39e01c44dafb801cb102d10fe6f58c66,,
+siemens-6gk5532,free_3d_model,include,network_switch,,SIEMENS 6GK5532-2SR00-3AR3,0.446,0.4826,0.0436,0.3748,1,8.2,glb,3dfindit,notion-attachment,,notion:39e01c44dafb802285d4f96d53a96090,,
+cg-dell-poweredge-rack,free_3d_model,skip,rack_with_servers,,Data Server Rack Dell PowerEdge,,,,,,,fbx,cgtrader,notion-attachment,,notion:39e01c44dafb802eb840c4ef4a88de5f,랙+서버 복합 | 제외: composite: 랙+서버 복합,excluded_2026-07-15
+cg-server-room-01,free_3d_model,skip,server_room,,Server Room 01_05,,,,,,,glb,cgtrader,notion-attachment,,notion:39e01c44dafb803c9a76e4697d7b8bf0,서버실 전체,SKIP_scene_scope
+cg-juniper-ex4550,free_3d_model,include,network_switch,,Juniper EX4550,,,,,,,skp,cgtrader,notion-attachment,,notion:39e01c44dafb8045973af8c0a1d3cc1d,,dims_missing
+cg-server-rack-4002422,free_3d_model,skip,rack_with_servers,,Server Rack (4002422),,,,,,,fbx,cgtrader,notion-attachment,,notion:39e01c44dafb805b86f4c682bf069a82,랙+서버 복합 | 제외: composite: 랙+서버 복합,excluded_2026-07-15
+gc-rack-server-module,free_3d_model,include,rack_console,,Rack Server Module,,,,,,,cad,grabcad,오프라인 전달 필요,,notion:39e01c44dafb809b9b00f1f0b0a8bdad,파일 업로드 불가,file_offline_only
+cg-storage-server-led,free_3d_model,include,storage_server,,Storage Server (LED ON),,,,,,,blend,cgtrader,notion-attachment,,notion:39e01c44dafb80a59be2c456e11931e3,,dims_missing
+cg-juniper-9204,free_3d_model,include,network_switch,,Juniper 9204,,,,,,,skp,cgtrader,notion-attachment,,notion:39e01c44dafb80b194f1ca186071704b,,dims_missing
+cg-hp-desktop,free_3d_model,skip,desktop,,HP Desktop,,,,,,,fbx,cgtrader,notion-attachment,,notion:39e01c44dafb80cf9801e0cbb754b673,제외: 국사 장비 아님(데스크톱),dims_missing;excluded_2026-07-15
+gc-supercomputador,free_3d_model,skip,rack_with_servers,,Supercomputador,,,,,,,iam,grabcad,notion-attachment,,notion:39e01c44dafb80d1818be2395e656c35,"랙+서버 복합, Inventor 포맷 | 제외: composite: 랙+서버 복합",needs_format_conversion;excluded_2026-07-15
+cg-juniper-ex3300,free_3d_model,include,network_switch,,Juniper EX3300,,,,,,,skp,cgtrader,notion-attachment,,notion:39e01c44dafb80e0a945d518c6d5b837,,dims_missing
+paid-dell-rack-set,paid_3d_model,skip,rack_with_servers,,Data Server and Network Rack,,,,,,,,cgtrader,onedrive,85.0,notion:39e01c44dafb8002a7ffcdacf031fda6,제외: composite: 랙+서버+네트워크 복합,excluded_2026-07-15
+paid-server-room-hd,paid_3d_model,skip,server_room,,Server Room HD,,,,,,,,cgtrader,nas:PAI_SIM_DATA/3D_Model/Server_Room,9.5,notion:39e01c44dafb8028ad86e41703c9bd82,서버실 전체,SKIP_scene_scope
+paid-2u-server,paid_3d_model,include,server,,2U Server,,,,,,,,cgtrader,onedrive,4.5,notion:39e01c44dafb803c88aecedde4ce7f3f,,
+paid-firewall-switch,paid_3d_model,skip,security_gateway,,Network Firewall and Switch,,,,,,,,cgtrader,onedrive,19.5,notion:39e01c44dafb809faa0ee0caccb3b7c9,제외: 독립 장비 2대(방화벽형 소형+대형)가 한 자산에 묶임,excluded_2026-07-15
+paid-patch-panel-rack,paid_3d_model,include,patch_panel,,Network Patch Panel Rack,,,,,,,,cgtrader,nas:PAI_SIM_DATA/3D_Model/Network_Patch_Panel,18.5,notion:39e01c44dafb80a19148fdfa01a2a65c,,
+paid-cisco-cat3750g48,paid_3d_model,include,network_switch,,Cisco Catalyst 3750G-48,,,,,,,,cgtrader,onedrive,7.0,notion:39e01c44dafb80a7b199e4d25e94f765,,
+paid-cisco-cat3750x,paid_3d_model,include,network_switch,,Catalyst 3750 X Switch Router,,,,,,,,cgtrader,onedrive,9.9,notion:39e01c44dafb80adb17dc4f487dd2b53,,
+paid-rackmount-switch,paid_3d_model,include,network_switch,,Rackmount Network Switch (low-poly),,,,,,,,cgtrader,nas:PAI_SIM_DATA/3D_Model/Rackmount_Network_Switch,18.5,notion:39e01c44dafb80dd8515d39a986bf2f4,,

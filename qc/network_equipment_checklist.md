@@ -2,8 +2,12 @@
 
 Before declaring the model finished, verify every applicable item:
 
-- Rackmount unit: front face (ears included) is exactly 0.4826 m wide, and
-  overall height is an integer multiple of 0.04445 m (1U), within 0.001 m.
+- Rackmount unit: front face (ears included) is exactly 0.4826 m wide.
+  The chassis BODY keeps the prompt's measured width (typically
+  0.434-0.446 m) — ears make up the difference.
+- Overall height matches the prompt's measured value when given (real units
+  run 0.001-0.002 m short of n x 0.04445 m); use n x 0.04445 m only when
+  the prompt gives no height.
 - Mounting ears: hole columns 0.4651 m apart center-to-center; ears are
   flush with the front face plane.
 - Front elements (RJ45/SFP ports, LEDs, buttons) are coplanar with or

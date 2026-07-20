@@ -8,6 +8,8 @@ Articraft is a local-first harness for generating and inspecting articulated 3D 
 
 Fork note: unlike upstream, this fork keeps selected canonical records under `data/records/` tracked in git (some via LFS; see `.gitattributes` and `.lfsconfig`). Only `data/cache/`, `data/local/`, and derived record assets are gitignored. Do not blanket-ignore or delete `data/` when syncing with upstream.
 
+Fork seams: intentional small edits inside upstream-owned files (e.g. the 3-line pricing override hook at the top of `pricing_for_provider_model` in `agent/cost.py`) are guarded by `tests/fork/`. After every upstream merge run `uv run --group dev pytest tests/fork -q`; a failure there names the seam to re-apply. Fork-only logic lives in never-conflicting files (`agent/cost_overrides.py`, `domain/`, `sdk/_docs/domain/`).
+
 If the user asks Claude Code to author Articraft data, follow [`EXTERNAL_AGENT_DATA.md`](EXTERNAL_AGENT_DATA.md). Use `uv run articraft external ...`; do not manually create record folders.
 
 ## Common Commands

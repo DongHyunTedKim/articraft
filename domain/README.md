@@ -39,11 +39,11 @@ Deliverable assets use a three-way source prefix so AI-generated
 lookalikes can never be mistaken for vendor CAD:
 
 - `ac_` — Articraft-generated, reference-style (not vendor CAD; details
-  may differ from the real product). e.g. `ac_server_2u_r760style_v1`
+  may differ from the real product). e.g. `ac_server_2u_dell_r760style_v1`
 - `cg_` — purchased/free 3D models (CGTrader etc.)
 - `oem_` — official vendor CAD (when obtained)
 
-Pattern: `<prefix>_<category>_<form>_<ref>style_v<n>`. Keep the reference
-device in the name for traceability, always suffixed with `style` for
+Pattern: `<prefix>_<category>_<form>_<vendor>_<ref>style_v<n>`. Keep the
+vendor and reference device in the name for traceability, always suffixed with `style` for
 `ac_` assets. Apply the same name to the URDF `<robot name>` so it
 propagates into simulators.

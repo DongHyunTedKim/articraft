@@ -1,5 +1,11 @@
 # Network equipment QC checklist
 
+This checklist verifies engineering constraints. It must NOT make the model
+plainer: never omit, shrink, or simplify visible front-face detail (ports,
+LEDs, labels, vents, latches, handles) to make a check easier to pass. The
+front face should carry the same element density as the reference photo —
+a dimensionally perfect but featureless slab is a FAILED result.
+
 Before declaring the model finished, verify every applicable item:
 
 - Rackmount unit: front face (ears included) is exactly 0.4826 m wide.

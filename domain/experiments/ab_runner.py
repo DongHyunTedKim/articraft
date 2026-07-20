@@ -211,20 +211,31 @@ def run_job(job: dict) -> None:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--limit", type=int, default=None, help="run only the first N jobs")
+    parser.add_argument(
+        "--retry-failed",
+        action="store_true",
+        help="reload status.json and re-run only failed/skipped jobs, keeping done results",
+    )
     args = parser.parse_args()
 
     LOGS.mkdir(exist_ok=True)
-    jobs = build_jobs()
-    if args.limit:
-        jobs = jobs[: args.limit]
-
-    _state.update(
-        {
-            "experiment": "domain-pack A/B",
-            "started_at": time.strftime("%Y-%m-%d %H:%M:%S"),
-            "runs": jobs,
-        }
-    )
+    if args.retry_failed:
+        _state.update(json.loads(STATUS_PATH.read_text(encoding="utf-8")))
+        jobs = [r for r in _state["runs"] if r["state"] in ("failed", "skipped")]
+        for job in jobs:
+            job.update(state="pending", error=None, minutes=None, record_id=None, cost_usd=None)
+        print(f"retrying {len(jobs)} failed job(s)")
+    else:
+        jobs = build_jobs()
+        if args.limit:
+            jobs = jobs[: args.limit]
+        _state.update(
+            {
+                "experiment": "domain-pack A/B",
+                "started_at": time.strftime("%Y-%m-%d %H:%M:%S"),
+                "runs": jobs,
+            }
+        )
     flush_status()
 
     aborted = threading.Event()

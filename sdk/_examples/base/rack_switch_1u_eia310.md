@@ -1,6 +1,6 @@
 ---
 title: '1U Rackmount Network Switch with EIA-310 Ears'
-description: 'Nexus-style 1U switch: 482.6mm rack face, 44.45mm (1U) height, three 2x8 RJ45 clusters and one 2x4 QSFP cluster as real recessed cavities cut into the sheet-metal chassis, EIA-310 mounting ears with screw holes.'
+description: 'Nexus-style 1U switch: 482.6mm rack face, 44.45mm (1U) height, three 2x8 RJ45 clusters at real port size in tight vertical pairs and a 2x2 SFP+ uplink cluster as real recessed cavities cut into the sheet-metal chassis, EIA-310 mounting ears with screw holes.'
 tags:
   - rack
   - rackmount
@@ -8,7 +8,7 @@ tags:
   - switch
   - network
   - rj45
-  - qsfp
+  - sfp-plus
   - sfp
   - eia-310
   - mounting-ear
@@ -49,11 +49,11 @@ EAR_DEPTH = 0.018
 FRONT_Y = -BODY_DEPTH / 2.0
 PORT_RECESS = 0.010
 
-RJ_SIZE = (0.0105, 0.0065)      # width, height of an RJ45 aperture
-RJ_PITCH = (0.0122, 0.0120)
-QSFP_SIZE = (0.0155, 0.0085)
-QSFP_PITCH = (0.0200, 0.0125)
-CLUSTER_GAP = 0.012
+RJ_SIZE = (0.0150, 0.0130)      # RJ45 aperture at real size (15 x 13 mm)
+RJ_PITCH = (0.0154, 0.0145)     # row pitch 14.5 = 13 port + 1.5 tight pair gap
+SFP_SIZE = (0.0145, 0.0095)     # SFP+ uplink cage at real size
+SFP_PITCH = (0.0160, 0.0105)
+CLUSTER_GAP = 0.008
 
 METAL = Material("cool_galvanized_sheet_metal", rgba=(0.62, 0.66, 0.68, 1.0))
 DARK = Material("black_recess_shadow", rgba=(0.015, 0.016, 0.018, 1.0))
@@ -76,8 +76,8 @@ def _port_centers(center_x: float, cols: int, rows: int, pitch: tuple[float, flo
 
 def _all_port_layouts() -> tuple[list[tuple[int, float, float, int, int]], list[tuple[float, float, int, int]]]:
     rj_cluster_width = (8 - 1) * RJ_PITCH[0] + RJ_SIZE[0]
-    qsfp_cluster_width = (4 - 1) * QSFP_PITCH[0] + QSFP_SIZE[0]
-    total_width = 3 * rj_cluster_width + 3 * CLUSTER_GAP + qsfp_cluster_width
+    sfp_cluster_width = (2 - 1) * SFP_PITCH[0] + SFP_SIZE[0]
+    total_width = 3 * rj_cluster_width + 3 * CLUSTER_GAP + sfp_cluster_width
     cursor = -total_width / 2.0
 
     rj_ports: list[tuple[int, float, float, int, int]] = []
@@ -88,9 +88,9 @@ def _all_port_layouts() -> tuple[list[tuple[int, float, float, int, int]], list[
         cursor += rj_cluster_width + CLUSTER_GAP
 
     cursor += CLUSTER_GAP - CLUSTER_GAP  # keep the explicit final inter-family gap in the formula above
-    qsfp_center_x = cursor + qsfp_cluster_width / 2.0
-    qsfp_ports = _port_centers(qsfp_center_x, 4, 2, QSFP_PITCH)
-    return rj_ports, qsfp_ports
+    sfp_center_x = cursor + sfp_cluster_width / 2.0
+    sfp_ports = _port_centers(sfp_center_x, 2, 2, SFP_PITCH)
+    return rj_ports, sfp_ports
 
 
 def _box_cutter(width: float, height: float, x: float, z: float, depth: float = PORT_RECESS) -> cq.Workplane:
@@ -104,11 +104,11 @@ def _box_cutter(width: float, height: float, x: float, z: float, depth: float = 
 def _build_chassis_body() -> cq.Workplane:
     body = cq.Workplane("XY").box(BODY_WIDTH, BODY_DEPTH, U1_HEIGHT).translate((0.0, 0.0, U1_HEIGHT / 2.0))
 
-    rj_ports, qsfp_ports = _all_port_layouts()
+    rj_ports, sfp_ports = _all_port_layouts()
     for _cluster, x, z, _row, _col in rj_ports:
         body = body.cut(_box_cutter(RJ_SIZE[0], RJ_SIZE[1], x, z))
-    for x, z, _row, _col in qsfp_ports:
-        body = body.cut(_box_cutter(QSFP_SIZE[0], QSFP_SIZE[1], x, z))
+    for x, z, _row, _col in sfp_ports:
+        body = body.cut(_box_cutter(SFP_SIZE[0], SFP_SIZE[1], x, z))
 
     # Shallow sheet-metal panel seams across the front face, visible on Nexus-style appliances.
     seam_height = 0.0014
@@ -131,7 +131,7 @@ def _build_ear_plate() -> cq.Workplane:
     return ear
 
 
-def _add_port_backing_visuals(chassis, rj_ports, qsfp_ports) -> None:
+def _add_port_backing_visuals(chassis, rj_ports, sfp_ports) -> None:
     backing_thickness = 0.0008
     backing_y = FRONT_Y + PORT_RECESS - backing_thickness / 2.0
 
@@ -150,12 +150,12 @@ def _add_port_backing_visuals(chassis, rj_ports, qsfp_ports) -> None:
             name=f"rj_contact_{cluster}_{row}_{col}",
         )
 
-    for x, z, row, col in qsfp_ports:
+    for x, z, row, col in sfp_ports:
         chassis.visual(
-            Box((QSFP_SIZE[0] * 0.82, backing_thickness, QSFP_SIZE[1] * 0.62)),
+            Box((SFP_SIZE[0] * 0.82, backing_thickness, SFP_SIZE[1] * 0.62)),
             origin=Origin(xyz=(x, backing_y, z)),
             material=DARK,
-            name=f"qsfp_{row}_{col}",
+            name=f"sfp_{row}_{col}",
         )
 
 
@@ -198,7 +198,7 @@ def build_object_model() -> ArticulatedObject:
         meta={
             "rj_cluster_count": 3,
             "rj_ports_per_cluster": 16,
-            "qsfp_ports": 8,
+            "sfp_uplink_ports": 4,
             "rack_width_m": RACK_WIDTH,
             "u_height_m": U1_HEIGHT,
         },
@@ -222,8 +222,8 @@ def build_object_model() -> ArticulatedObject:
             name=side,
         )
 
-    rj_ports, qsfp_ports = _all_port_layouts()
-    _add_port_backing_visuals(chassis, rj_ports, qsfp_ports)
+    rj_ports, sfp_ports = _all_port_layouts()
+    _add_port_backing_visuals(chassis, rj_ports, sfp_ports)
     _add_front_surface_details(chassis)
 
     return model
@@ -241,9 +241,9 @@ def run_tests() -> TestReport:
 
     visual_names = {visual.name for visual in chassis.visuals}
     rj_ports = [name for name in visual_names if name and name.startswith("rj_") and name.split("_")[1].isdigit()]
-    qsfp_ports = [name for name in visual_names if name and name.startswith("qsfp_")]
+    sfp_ports = [name for name in visual_names if name and name.startswith("sfp_")]
     ctx.check("three 2-by-8 RJ45 clusters", len(rj_ports) == 48, details=f"found {len(rj_ports)} RJ45 cavities")
-    ctx.check("one 2-by-4 QSFP cluster", len(qsfp_ports) == 8, details=f"found {len(qsfp_ports)} QSFP cavities")
+    ctx.check("one 2-by-2 SFP+ uplink cluster", len(sfp_ports) == 4, details=f"found {len(sfp_ports)} SFP+ cavities")
 
     aabb = ctx.part_world_aabb(chassis)
     if aabb is None:
@@ -259,8 +259,8 @@ def run_tests() -> TestReport:
 
     # Representative black backs sit well behind the front face, proving the ports are recessed cavities.
     rj_aabb = ctx.part_element_world_aabb(chassis, elem="rj_0_0_0")
-    qsfp_aabb = ctx.part_element_world_aabb(chassis, elem="qsfp_0_0")
-    for label, elem_aabb in (("RJ45", rj_aabb), ("QSFP", qsfp_aabb)):
+    sfp_aabb = ctx.part_element_world_aabb(chassis, elem="sfp_0_0")
+    for label, elem_aabb in (("RJ45", rj_aabb), ("SFP+", sfp_aabb)):
         if elem_aabb is None:
             ctx.fail(f"{label} representative cavity exists", "missing visual AABB")
         else:

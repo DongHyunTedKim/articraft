@@ -18,6 +18,10 @@ Before declaring the model finished, verify every applicable item:
   flush with the front face plane.
 - Front elements (RJ45/SFP ports, LEDs, buttons) are coplanar with or
   recessed 0.001-0.002 m behind the faceplate — never floating in front.
+- Multi-port/multi-bay fronts: repeated elements form a uniform grid
+  (identical size, uniform pitch), row/group structure matches the prompt
+  and reference photo, and vertical pairs are tight (rows 0.001-0.003 m
+  apart) unless the real device is asymmetric.
 - Every door, rail, tray, or module articulation sweeps its full motion
   range without colliding into neighboring parts
   (verify with fail_if_parts_overlap_in_sampled_poses).

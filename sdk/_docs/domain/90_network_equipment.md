@@ -83,6 +83,23 @@ RACK_BODY_W = 0.438
 | 40mm fan opening | `0.040` dia | 1U rear/side; 80/120 mm in larger units |
 | Handle / latch | `0.010`–`0.015` deep | on removable modules and PSUs |
 
+## Repeated-element grids (ports, drive bays, fans, PSU modules)
+
+- **Tight vertical pairs**: on multi-port equipment the two rows sit as a
+  belly-to-belly pair — inter-row gap `0.001`-`0.003` m (at most 0.25x the
+  element height). "Two rows" never means two widely separated rows.
+- **Real aperture sizes** (firm defaults when the prompt omits them):
+  RJ45 `0.015 x 0.013` m, SFP/SFP+ cage `0.0145 x 0.0095` m,
+  QSFP cage `0.018 x 0.009` m, 2.5-inch drive bay `0.070 x 0.015` m.
+- **Uniform grid**: identical element size and uniform pitch within a
+  group; groups (e.g. three 16-port blocks) follow the prompt/photo.
+- **Asymmetric layouts are real**: rows may legitimately hold different
+  counts when the device is asymmetric (e.g. HPE DL360 8SFF: top row
+  3 bays + universal media bay, bottom row 5 bays). Follow the reference
+  photo/prompt over forced symmetry.
+- **One aperture, one element**: model each port/bay as a single named
+  visual (`port_rj45_01`, `drive_bay_03`), never assembled from strips.
+
 ## Articulation guidance
 
 - Cabinet/enclosure doors: `revolute`, lower/upper `0.0 .. ~2.27` rad

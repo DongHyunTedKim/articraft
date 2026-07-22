@@ -104,7 +104,7 @@ Status legend: `[ready]` dims+mass confirmed · `[proxy]` similar-model dims ·
 > A Cisco Nexus 93180YC-EX 1U rackmount data-center switch. 439 mm wide,
 > 44 mm (1U) tall, 571 mm deep, 7.8 kg. Front: 48 SFP28 cages in two rows
 > of 24 with paired port LEDs, six QSFP28 uplink cages on the right in a
-> 2x3 block, status LEDs and management ports on the left edge.
+> 2x3 block, a narrow left legend strip with status LEDs and port numbering only (management and console ports are on the rear side, not the front).
 
 ### 14. arista-7280sr3-48yc8 `[ready]`
 > An Arista 7280SR3-48YC8 1U rackmount router-switch. 439.9 mm wide,

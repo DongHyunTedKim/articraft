@@ -407,6 +407,12 @@ def is_dashscope_qwen3_6_plus_model(model_id: str) -> bool:
 
 
 def pricing_for_provider_model(provider: str, model_id: str) -> dict[str, float] | None:
+    # Fork seam: consult domain/pricing_overrides.json first (keep these 3
+    # lines when merging upstream; guarded by tests/fork/test_cost_overrides.py).
+    from agent.cost_overrides import local_pricing_override
+
+    if (override := local_pricing_override(provider, model_id)) is not None:
+        return override
     if not (provider or "").strip():
         return None
     try:

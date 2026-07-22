@@ -94,6 +94,8 @@ _CADQUERY_DOCS = (
     Path("sdk/_docs/cadquery/39c_cadquery_api_ref.md"),
 )
 
+_DOMAIN_DOCS = (Path("sdk/_docs/domain/90_network_equipment.md"),)
+
 _SDK_PACKAGE_ALIASES = {
     "": "sdk",
     "base": "sdk",
@@ -105,7 +107,7 @@ SDK_PROFILES: dict[str, SdkProfile] = {
     "sdk": SdkProfile(
         package_name="sdk",
         scaffold_path=Path("scaffold.py"),
-        docs_full=_COMMON_DOCS[:4] + _BASE_DOCS + _CADQUERY_DOCS + _COMMON_DOCS[4:],
+        docs_full=_COMMON_DOCS[:4] + _BASE_DOCS + _CADQUERY_DOCS + _COMMON_DOCS[4:] + _DOMAIN_DOCS,
         docs_core=(
             Path("sdk/_docs/common/00_quickstart.md"),
             Path("sdk/_docs/cadquery/35_cadquery.md"),

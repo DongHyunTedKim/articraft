@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>M2 육안 평가 — 원클릭 채점</title>
+<style>
+:root { --bg:#14171b; --surface:#1c2127; --line:#333b45; --ink:#e2e7ec; --muted:#97a2ae;
+  --blue:#6fa5cf; --green:#58a97c; --amber:#d99a45; }
+* { box-sizing:border-box; }
+body { margin:0; background:var(--bg); color:var(--ink);
+  font-family:"Apple SD Gothic Neo",Pretendard,"Noto Sans KR",system-ui,sans-serif;
+  display:flex; flex-direction:column; height:100vh; }
+header { display:flex; align-items:center; gap:16px; padding:10px 18px; border-bottom:1px solid var(--line); }
+header h1 { font-size:15px; margin:0; font-weight:800; }
+#which { font-size:14px; color:var(--blue); font-weight:700; }
+#prog { flex:1; height:8px; background:var(--surface); border-radius:99px; overflow:hidden; }
+#prog > div { height:100%; background:var(--green); transition:width .3s; }
+#count { font-size:12.5px; color:var(--muted); font-variant-numeric:tabular-nums; }
+iframe { flex:1; border:0; width:100%; background:#fff; }
+footer { display:flex; align-items:center; gap:8px; padding:12px 18px; border-top:1px solid var(--line); flex-wrap:wrap; }
+.score { font-size:15px; font-weight:800; padding:10px 0; width:52px; text-align:center; border-radius:6px;
+  border:1px solid var(--line); background:var(--surface); color:var(--ink); cursor:pointer; }
+.score:hover { border-color:var(--blue); }
+.score.sel { background:var(--green); border-color:var(--green); color:#0c130f; }
+.nav { padding:10px 14px; border-radius:6px; border:1px solid var(--line); background:var(--surface);
+  color:var(--muted); cursor:pointer; font-size:13px; }
+#export { margin-left:auto; border-color:var(--amber); color:var(--amber); }
+#done-note { font-size:12.5px; color:var(--muted); }
+textarea { width:100%; height:120px; background:var(--surface); color:var(--ink);
+  border:1px solid var(--line); border-radius:6px; font-family:monospace; font-size:11px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>M2 채점</h1>
+  <span id="which">로딩…</span>
+  <div id="prog"><div style="width:0%"></div></div>
+  <span id="count"></span>
+</header>
+<iframe id="frame" src="about:blank"></iframe>
+<footer>
+  <button class="nav" id="prev">◀ 이전</button>
+  <span id="scores"></span>
+  <button class="nav" id="next">다음 ▶</button>
+  <button class="nav" id="export">결과 내보내기</button>
+  <span id="done-note"></span>
+</footer>
+<div id="out" style="display:none; padding:12px 18px;"><textarea id="json" readonly></textarea></div>
+<script>
+const VIEWER = "http://127.0.0.1:8765/viewer?record=";
+const KEY = "m2-scores-v1";
+let list = [], idx = 0;
+let scores = JSON.parse(localStorage.getItem(KEY) || "{}");
+
+const VALUES = [];
+for (let v = 1; v <= 5; v += 0.5) VALUES.push(v);
+
+function save() { localStorage.setItem(KEY, JSON.stringify(scores)); }
+
+function render() {
+  const item = list[idx];
+  document.getElementById("which").textContent = `${item.eval_no} · ${item.device}`;
+  document.getElementById("frame").src = VIEWER + item.record_id;
+  const doneCount = list.filter(x => scores[x.eval_no] != null).length;
+  document.getElementById("count").textContent = `${doneCount}/${list.length} 채점됨`;
+  document.querySelector("#prog > div").style.width = (100 * doneCount / list.length) + "%";
+  const cur = scores[item.eval_no];
+  document.getElementById("scores").innerHTML = VALUES.map(v =>
+    `<button class="score ${cur === v ? "sel" : ""}" data-v="${v}">${v}</button>`).join("");
+  document.querySelectorAll(".score").forEach(b => b.onclick = () => {
+    scores[item.eval_no] = parseFloat(b.dataset.v);
+    save();
+    if (idx < list.length - 1) { idx += 1; render(); }
+    else { render(); note("마지막 항목입니다 — 결과 내보내기를 눌러주세요"); }
+  });
+  note(cur != null ? `현재 점수: ${cur}` : "");
+}
+function note(t) { document.getElementById("done-note").textContent = t; }
+
+document.getElementById("prev").onclick = () => { if (idx > 0) { idx -= 1; render(); } };
+document.getElementById("next").onclick = () => { if (idx < list.length - 1) { idx += 1; render(); } };
+document.addEventListener("keydown", e => {
+  if (e.key === "ArrowLeft") document.getElementById("prev").click();
+  if (e.key === "ArrowRight") document.getElementById("next").click();
+});
+document.getElementById("export").onclick = () => {
+  const out = list.map(x => ({ eval_no: x.eval_no, record_id: x.record_id, score: scores[x.eval_no] ?? null }));
+  const text = JSON.stringify(out, null, 1);
+  document.getElementById("out").style.display = "block";
+  const ta = document.getElementById("json");
+  ta.value = text; ta.select();
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([text], { type: "application/json" }));
+  a.download = "m2_scores.json";
+  a.click();
+  note("m2_scores.json 다운로드됨 — 이 파일을 Claude에게 주면 됩니다");
+};
+
+fetch("eval_list.json").then(r => r.json()).then(d => {
+  list = d;
+  const firstUnscored = list.findIndex(x => scores[x.eval_no] == null);
+  idx = firstUnscored === -1 ? 0 : firstUnscored;
+  render();
+});
+</script>
+</body>
+</html>

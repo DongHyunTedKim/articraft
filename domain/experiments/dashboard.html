@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>도메인 팩 A/B 실험 — 진행 현황</title>
+<style>
+:root {
+  --bg:#14171b; --surface:#1c2127; --line:#333b45; --ink:#e2e7ec; --muted:#97a2ae;
+  --blue:#6fa5cf; --green:#58a97c; --red:#d3736d; --amber:#d99a45;
+}
+* { box-sizing:border-box; }
+body { margin:0; background:var(--bg); color:var(--ink);
+  font-family:"Apple SD Gothic Neo",Pretendard,"Noto Sans KR",system-ui,sans-serif;
+  font-size:14px; line-height:1.5; padding:28px; }
+h1 { font-size:19px; margin:0 0 4px; font-weight:800; }
+.sub { color:var(--muted); font-size:12.5px; margin-bottom:18px; }
+.bar { height:14px; background:var(--surface); border:1px solid var(--line); border-radius:999px; overflow:hidden; margin:10px 0 6px; }
+.bar > div { height:100%; background:var(--green); transition:width .6s; }
+.totals { display:flex; gap:22px; flex-wrap:wrap; margin:12px 0 22px; font-variant-numeric:tabular-nums; }
+.totals b { font-size:20px; display:block; }
+.totals span { color:var(--muted); font-size:11.5px; letter-spacing:.06em; text-transform:uppercase; }
+.grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:10px; }
+.card { background:var(--surface); border:1px solid var(--line); border-radius:6px; padding:10px 12px; border-left:4px solid var(--line); }
+.card.running { border-left-color:var(--blue); animation:pulse 1.6s infinite; }
+.card.done { border-left-color:var(--green); }
+.card.failed { border-left-color:var(--red); }
+.card.skipped { opacity:.45; }
+@keyframes pulse { 50% { background:#232c36; } }
+.lbl { font-weight:700; font-size:13px; }
+.meta { color:var(--muted); font-size:11.5px; margin-top:2px; }
+.cost { font-variant-numeric:tabular-nums; }
+.err { color:var(--red); font-size:11px; margin-top:4px; word-break:break-all; }
+.legend { color:var(--muted); font-size:12px; margin-top:20px; }
+.dot { display:inline-block; width:9px; height:9px; border-radius:2px; margin:0 4px 0 12px; }
+</style>
+</head>
+<body>
+<h1>도메인 팩 A/B 실험 — 실시간 진행 현황</h1>
+<div class="sub" id="sub">status.json 대기 중…</div>
+<div class="bar"><div id="fill" style="width:0%"></div></div>
+<div class="totals" id="totals"></div>
+<div class="grid" id="grid"></div>
+<div class="legend">
+  <span class="dot" style="background:var(--line)"></span>대기
+  <span class="dot" style="background:var(--blue)"></span>생성 중
+  <span class="dot" style="background:var(--green)"></span>완료
+  <span class="dot" style="background:var(--red)"></span>실패
+</div>
+<script>
+const DEV = { nexus:"Nexus 93180YC", arista:"Arista 7010T", r760:"Dell R760", dl360:"HPE DL360" };
+async function tick() {
+  try {
+    const res = await fetch("status.json?t=" + Date.now());
+    if (!res.ok) throw new Error(res.status);
+    const s = await res.json();
+    const t = s.totals || {};
+    document.getElementById("sub").textContent =
+      `시작 ${s.started_at} · 갱신 ${s.updated_at} · 자동 새로고침 4초`;
+    const pct = t.total ? Math.round(100 * t.done / t.total) : 0;
+    document.getElementById("fill").style.width = pct + "%";
+    document.getElementById("totals").innerHTML =
+      `<div><b>${t.done ?? 0}/${t.total ?? 0}</b><span>완료 (${pct}%)</span></div>` +
+      `<div><b>${t.running ?? 0}</b><span>생성 중</span></div>` +
+      `<div><b style="color:${t.failed ? "var(--red)" : "inherit"}">${t.failed ?? 0}</b><span>실패</span></div>` +
+      `<div><b>$${(t.cost_usd ?? 0).toFixed(2)}</b><span>누적 비용</span></div>`;
+    document.getElementById("grid").innerHTML = (s.runs || []).map(r => `
+      <div class="card ${r.state}">
+        <div class="lbl">${r.cond} · ${DEV[r.device] || r.device} · ${r.model_key} · ${r.rep}</div>
+        <div class="meta">${r.state}${r.minutes ? ` · ${r.minutes}분` : ""}${
+          r.cost_usd != null ? ` · <span class="cost">$${r.cost_usd.toFixed(2)}</span>` : ""}</div>
+        ${r.record_id ? `<div class="meta">${r.record_id.slice(0, 34)}…</div>` : ""}
+        ${r.error ? `<div class="err">${r.error}</div>` : ""}
+      </div>`).join("");
+  } catch (e) {
+    document.getElementById("sub").textContent = "status.json 읽기 실패 — 러너 시작 전이거나 서버 중지됨";
+  }
+}
+tick();
+setInterval(tick, 4000);
+</script>
+</body>
+</html>

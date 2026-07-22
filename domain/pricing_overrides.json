@@ -1,0 +1,38 @@
+{
+  "_comment": "Fork-local pricing overrides, USD per 1M tokens. Consulted before the upstream table in agent/cost.py (see agent/cost_overrides.py). Refresh values against https://openrouter.ai/api/v1/models.",
+  "openrouter": {
+    "openai/gpt-5.6-sol": {
+      "input_uncached": 5.0,
+      "input_cached": 0.5,
+      "output": 30.0,
+      "input_cache_write": 6.25
+    },
+    "openai/gpt-5.6-terra": {
+      "input_uncached": 2.5,
+      "input_cached": 0.25,
+      "output": 15.0,
+      "input_cache_write": 3.125
+    },
+    "openai/gpt-5.6-luna": {
+      "input_uncached": 1.0,
+      "input_cached": 0.1,
+      "output": 6.0,
+      "input_cache_write": 1.25
+    },
+    "openai/gpt-5.5": {
+      "input_uncached": 5.0,
+      "input_cached": 0.5,
+      "output": 30.0
+    },
+    "anthropic/claude-opus-4.8": {
+      "input_uncached": 5.0,
+      "input_cached": 0.5,
+      "input_cache_write": 6.25,
+      "output": 25.0
+    }
+  },
+  "_meta": {
+    "as_of": "2026-07-20",
+    "source": "https://openrouter.ai/api/v1/models"
+  }
+}

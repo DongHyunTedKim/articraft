@@ -59,12 +59,15 @@ def audit(record_id: str) -> dict:
     (w, h), grid = max(cands, key=lambda kv: len(kv[1]))
 
     zs = sorted(e[2] for e in grid)
-    rows: list[list[float]] = []
-    for z in zs:
-        if rows and abs(st.mean(rows[-1]) - z) < max(h, 0.004):
-            rows[-1].append(z)
-        else:
+    # 간격 기반 클러스터링: 연속 z 차이가 요소 높이의 절반(최소 3mm)을
+    # 넘을 때만 새 행 — 밀착 쌍(행피치 ~= 높이)에서도 행이 분리된다.
+    split = max(0.003, h * 0.5)
+    rows: list[list[float]] = [[zs[0]]]
+    for prev, z in zip(zs, zs[1:]):
+        if z - prev > split:
             rows.append([z])
+        else:
+            rows[-1].append(z)
     row_counts = [len(r) for r in rows]
     intra = max((max(r) - min(r)) * 1000 for r in rows)
     gap = None
@@ -72,8 +75,16 @@ def audit(record_id: str) -> dict:
         centers = sorted(st.mean(r) for r in rows)
         gap = round((centers[1] - centers[0] - h) * 1000, 1)
     row0 = sorted(e[1] for e in grid if abs(e[2] - st.mean(rows[0])) < max(h, 0.004))
-    pitches = [b - a for a, b in zip(row0, row0[1:])]
-    cv = round(100 * st.pstdev(pitches) / st.mean(pitches), 1) if len(pitches) > 2 else 0.0
+    all_pitches = [b - a for a, b in zip(row0, row0[1:])]
+    med = st.median(all_pitches) if all_pitches else 0
+    # 그룹 간 간격(중앙값 1.5배 초과)은 그룹 구분자로 분리 — 편차 아님
+    pitches = [x for x in all_pitches if 0 < x <= med * 1.5]
+    group_seps = len(all_pitches) - len(pitches)
+    cv = (
+        round(100 * st.pstdev(pitches) / st.mean(pitches), 1)
+        if len(pitches) > 2 and st.mean(pitches) > 0
+        else 0.0
+    )
     aspect = "가로형" if w > h * 1.15 else ("세로형" if h > w * 1.15 else "정방형")
 
     issues = []
@@ -93,6 +104,7 @@ def audit(record_id: str) -> dict:
         "rows": row_counts,
         "intra_row_mm": round(intra, 2),
         "pitch_cv_pct": cv,
+        "group_seps": group_seps,
         "row_gap_mm": gap,
         "verdict": "PASS" if not issues else "; ".join(issues),
     }

@@ -1,0 +1,137 @@
+[
+ {
+  "eval_no": "E01",
+  "record_id": "rec_a-cisco-nexus-93180yc-ex-1u-rackmount-data-cente_20260720_020036_298613_4201257c",
+  "score": 3
+ },
+ {
+  "eval_no": "E02",
+  "record_id": "rec_a-dell-poweredge-r760-2u-rackmount-server-with-i_20260720_013511_207061_b7c71940",
+  "score": 3.5
+ },
+ {
+  "eval_no": "E03",
+  "record_id": "rec_an-arista-7010t-48-1u-rackmount-access-switch-sh_20260720_020635_922151_ffc600a2",
+  "score": 3
+ },
+ {
+  "eval_no": "E04",
+  "record_id": "rec_a-dell-poweredge-r760-2u-rackmount-server-with-i_20260720_021518_267606_94f463f0",
+  "score": 3
+ },
+ {
+  "eval_no": "E05",
+  "record_id": "rec_a-cisco-nexus-93180yc-ex-1u-rackmount-data-cente_20260720_020205_658177_3ee63e78",
+  "score": 3
+ },
+ {
+  "eval_no": "E06",
+  "record_id": "rec_a-cisco-nexus-93180yc-ex-1u-rackmount-data-cente_20260720_015709_661284_4201257c",
+  "score": 4
+ },
+ {
+  "eval_no": "E07",
+  "record_id": "rec_an-hpe-proliant-dl360-gen10-1u-rackmount-server-_20260720_015126_911397_083e385e",
+  "score": 2
+ },
+ {
+  "eval_no": "E08",
+  "record_id": "rec_an-hpe-proliant-dl360-gen10-1u-rackmount-server-_20260720_022053_856340_a60915b2",
+  "score": 3
+ },
+ {
+  "eval_no": "E09",
+  "record_id": "rec_a-dell-poweredge-r760-2u-rackmount-server-with-i_20260720_013721_802675_94f463f0",
+  "score": 4
+ },
+ {
+  "eval_no": "E10",
+  "record_id": "rec_a-dell-poweredge-r760-2u-rackmount-server-with-i_20260720_021051_356442_b7c71940",
+  "score": 4.5
+ },
+ {
+  "eval_no": "E11",
+  "record_id": "rec_a-cisco-nexus-93180yc-ex-1u-rackmount-data-cente_20260720_012507_936352_4201257c",
+  "score": 3
+ },
+ {
+  "eval_no": "E12",
+  "record_id": "rec_an-hpe-proliant-dl360-gen10-1u-rackmount-server-_20260720_022800_623194_a60915b2",
+  "score": 2
+ },
+ {
+  "eval_no": "E13",
+  "record_id": "rec_an-arista-7010t-48-1u-rackmount-access-switch-sh_20260720_024810_833178_ffc600a2",
+  "score": 4
+ },
+ {
+  "eval_no": "E14",
+  "record_id": "rec_a-cisco-nexus-93180yc-ex-1u-rackmount-data-cente_20260720_012502_121255_3ee63e78",
+  "score": 3
+ },
+ {
+  "eval_no": "E15",
+  "record_id": "rec_an-arista-7010t-48-1u-rackmount-access-switch-sh_20260720_020902_465218_54474878",
+  "score": 3
+ },
+ {
+  "eval_no": "E16",
+  "record_id": "rec_a-cisco-nexus-93180yc-ex-1u-rackmount-data-cente_20260720_012937_998957_3ee63e78",
+  "score": 3
+ },
+ {
+  "eval_no": "E17",
+  "record_id": "rec_an-arista-7010t-48-1u-rackmount-access-switch-sh_20260720_024810_833260_54474878",
+  "score": 4
+ },
+ {
+  "eval_no": "E18",
+  "record_id": "rec_a-cisco-nexus-93180yc-ex-1u-rackmount-data-cente_20260720_015904_478204_3ee63e78",
+  "score": 3
+ },
+ {
+  "eval_no": "E19",
+  "record_id": "rec_a-cisco-nexus-93180yc-ex-1u-rackmount-data-cente_20260720_012507_936335_4201257c",
+  "score": 3
+ },
+ {
+  "eval_no": "E20",
+  "record_id": "rec_an-hpe-proliant-dl360-gen10-1u-rackmount-server-_20260720_030225_674435_a60915b2",
+  "score": 4
+ },
+ {
+  "eval_no": "E21",
+  "record_id": "rec_an-arista-7010t-48-1u-rackmount-access-switch-sh_20260720_020327_263679_54474878",
+  "score": 5
+ },
+ {
+  "eval_no": "E22",
+  "record_id": "rec_an-hpe-proliant-dl360-gen10-1u-rackmount-server-_20260720_014825_750580_a60915b2",
+  "score": 3
+ },
+ {
+  "eval_no": "E23",
+  "record_id": "rec_a-dell-poweredge-r760-2u-rackmount-server-with-i_20260720_021843_826236_b7c71940",
+  "score": 3
+ },
+ {
+  "eval_no": "E24",
+  "record_id": "rec_a-dell-poweredge-r760-2u-rackmount-server-with-i_20260720_025148_622843_b7c71940",
+  "score": 3
+ },
+ {
+  "eval_no": "E25",
+  "record_id": "rec_an-hpe-proliant-dl360-gen10-1u-rackmount-server-_20260720_022735_333039_083e385e",
+  "score": 3
+ },
+ {
+  "eval_no": "E26",
+  "record_id": "rec_an-hpe-proliant-dl360-gen10-1u-rackmount-server-_20260720_030241_765918_083e385e",
+  "score": 3
+ },
+ {
+  "eval_no": "E27",
+  "record_id": "rec_an-arista-7010t-48-1u-rackmount-access-switch-sh_20260720_024810_833311_54474878",
+  "score": 4
+ }
+]

@@ -1,0 +1,215 @@
+[
+ {
+  "label": "ab-A-nexus-r1-sol",
+  "n": 168,
+  "rows": 5,
+  "row_sizes": [
+   54,
+   48,
+   31,
+   28,
+   7
+  ],
+  "z_scatter_mm": 3.75,
+  "landscape": 168,
+  "portrait": 0,
+  "square": 0
+ },
+ {
+  "label": "ab-B-nexus-r1-sol",
+  "n": 207,
+  "rows": 4,
+  "row_sizes": [
+   55,
+   55,
+   49,
+   48
+  ],
+  "z_scatter_mm": 3.85,
+  "landscape": 207,
+  "portrait": 0,
+  "square": 0
+ },
+ {
+  "label": "ab-A-nexus-r1-opus",
+  "n": 59,
+  "rows": 2,
+  "row_sizes": [
+   55,
+   4
+  ],
+  "z_scatter_mm": 2.8,
+  "landscape": 5,
+  "portrait": 0,
+  "square": 54
+ },
+ {
+  "label": "ab-B-nexus-r1-opus",
+  "n": 104,
+  "rows": 3,
+  "row_sizes": [
+   48,
+   29,
+   27
+  ],
+  "z_scatter_mm": 3.0,
+  "landscape": 56,
+  "portrait": 0,
+  "square": 48
+ },
+ {
+  "label": "ab-A-arista-r1-sol",
+  "n": 71,
+  "rows": 6,
+  "row_sizes": [
+   32,
+   31,
+   2,
+   2,
+   2
+  ],
+  "z_scatter_mm": 2.0,
+  "landscape": 63,
+  "portrait": 8,
+  "square": 0
+ },
+ {
+  "label": "ab-B-arista-r1-sol",
+  "n": 119,
+  "rows": 5,
+  "row_sizes": [
+   54,
+   53,
+   6,
+   3,
+   3
+  ],
+  "z_scatter_mm": 2.22,
+  "landscape": 113,
+  "portrait": 6,
+  "square": 0
+ },
+ {
+  "label": "ab-A-arista-r1-opus",
+  "n": 161,
+  "rows": 4,
+  "row_sizes": [
+   56,
+   52,
+   27,
+   26
+  ],
+  "z_scatter_mm": 1.2,
+  "landscape": 61,
+  "portrait": 50,
+  "square": 50
+ },
+ {
+  "label": "ab-A-nexus-r2-sol",
+  "n": 320,
+  "rows": 6,
+  "row_sizes": [
+   76,
+   75,
+   57,
+   56,
+   28
+  ],
+  "z_scatter_mm": 3.12,
+  "landscape": 208,
+  "portrait": 112,
+  "square": 0
+ },
+ {
+  "label": "ab-B-nexus-r2-sol",
+  "n": 114,
+  "rows": 4,
+  "row_sizes": [
+   55,
+   55,
+   3,
+   1
+  ],
+  "z_scatter_mm": 3.77,
+  "landscape": 114,
+  "portrait": 0,
+  "square": 0
+ },
+ {
+  "label": "ab-A-nexus-r2-opus",
+  "n": 58,
+  "rows": 3,
+  "row_sizes": [
+   28,
+   28,
+   2
+  ],
+  "z_scatter_mm": 4.7,
+  "landscape": 58,
+  "portrait": 0,
+  "square": 0
+ },
+ {
+  "label": "ab-B-nexus-r2-opus",
+  "n": 138,
+  "rows": 5,
+  "row_sizes": [
+   50,
+   50,
+   30,
+   6,
+   2
+  ],
+  "z_scatter_mm": 1.92,
+  "landscape": 112,
+  "portrait": 0,
+  "square": 26
+ },
+ {
+  "label": "ab-A-arista-r2-sol",
+  "n": 138,
+  "rows": 5,
+  "row_sizes": [
+   36,
+   35,
+   33,
+   29,
+   5
+  ],
+  "z_scatter_mm": 3.8,
+  "landscape": 76,
+  "portrait": 14,
+  "square": 48
+ },
+ {
+  "label": "ab-B-arista-r2-sol",
+  "n": 123,
+  "rows": 5,
+  "row_sizes": [
+   54,
+   53,
+   8,
+   4,
+   4
+  ],
+  "z_scatter_mm": 3.4,
+  "landscape": 114,
+  "portrait": 9,
+  "square": 0
+ },
+ {
+  "label": "ab-A-arista-r2-opus",
+  "n": 59,
+  "rows": 4,
+  "row_sizes": [
+   28,
+   27,
+   2,
+   2
+  ],
+  "z_scatter_mm": 0.0,
+  "landscape": 9,
+  "portrait": 0,
+  "square": 50
+ }
+]

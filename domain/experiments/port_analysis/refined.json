@@ -1,0 +1,297 @@
+[
+ {
+  "n_main": 48,
+  "port_wh_mm": [
+   10.4,
+   8.7
+  ],
+  "aspect": "가로형",
+  "rows": 2,
+  "row_counts": [
+   24,
+   24
+  ],
+  "intra_row_mm": 0.0,
+  "pitch_med_mm": 11.5,
+  "pitch_cv%": 0.0,
+  "group_gaps": 0,
+  "label": "ab-A-nexus-r1-sol",
+  "cond": "A",
+  "model": "sol",
+  "device": "nexus"
+ },
+ {
+  "n_main": 48,
+  "port_wh_mm": [
+   10.8,
+   6.4
+  ],
+  "aspect": "가로형",
+  "rows": 2,
+  "row_counts": [
+   24,
+   24
+  ],
+  "intra_row_mm": 0.0,
+  "pitch_med_mm": 13.1,
+  "pitch_cv%": 0.0,
+  "group_gaps": 0,
+  "label": "ab-B-nexus-r1-sol",
+  "cond": "B",
+  "model": "sol",
+  "device": "nexus"
+ },
+ {
+  "n_main": 48,
+  "port_wh_mm": [
+   1.6,
+   1.6
+  ],
+  "aspect": "정방형",
+  "rows": 1,
+  "row_counts": [
+   48
+  ],
+  "intra_row_mm": 2.8,
+  "pitch_med_mm": 0.0,
+  "pitch_cv%": 102.2,
+  "group_gaps": 23,
+  "label": "ab-A-nexus-r1-opus",
+  "cond": "A",
+  "model": "opus",
+  "device": "nexus"
+ },
+ {
+  "n_main": 48,
+  "port_wh_mm": [
+   12.4,
+   8.2
+  ],
+  "aspect": "가로형",
+  "rows": 2,
+  "row_counts": [
+   24,
+   24
+  ],
+  "intra_row_mm": 0.0,
+  "pitch_med_mm": 13.4,
+  "pitch_cv%": 0.0,
+  "group_gaps": 0,
+  "label": "ab-B-nexus-r1-opus",
+  "cond": "B",
+  "model": "opus",
+  "device": "nexus"
+ },
+ {
+  "n_main": 50,
+  "port_wh_mm": [
+   10.5,
+   9.1
+  ],
+  "aspect": "가로형",
+  "rows": 2,
+  "row_counts": [
+   24,
+   26
+  ],
+  "intra_row_mm": 2.0,
+  "pitch_med_mm": 11.2,
+  "pitch_cv%": 1.0,
+  "group_gaps": 0,
+  "label": "ab-A-arista-r1-sol",
+  "cond": "A",
+  "model": "sol",
+  "device": "arista"
+ },
+ {
+  "n_main": 48,
+  "port_wh_mm": [
+   11.8,
+   8.4
+  ],
+  "aspect": "가로형",
+  "rows": 2,
+  "row_counts": [
+   24,
+   24
+  ],
+  "intra_row_mm": 0.0,
+  "pitch_med_mm": 11.8,
+  "pitch_cv%": 21.4,
+  "group_gaps": 2,
+  "label": "ab-B-arista-r1-sol",
+  "cond": "B",
+  "model": "sol",
+  "device": "arista"
+ },
+ {
+  "n_main": 50,
+  "port_wh_mm": [
+   9.8,
+   11.0
+  ],
+  "aspect": "정방형",
+  "rows": 2,
+  "row_counts": [
+   24,
+   26
+  ],
+  "intra_row_mm": 1.0,
+  "pitch_med_mm": 10.8,
+  "pitch_cv%": 14.9,
+  "group_gaps": 2,
+  "label": "ab-A-arista-r1-opus",
+  "cond": "A",
+  "model": "opus",
+  "device": "arista"
+ },
+ {
+  "n_main": 96,
+  "port_wh_mm": [
+   12.0,
+   1.5
+  ],
+  "aspect": "가로형",
+  "rows": 4,
+  "row_counts": [
+   24,
+   24,
+   24,
+   24
+  ],
+  "intra_row_mm": 0.0,
+  "pitch_med_mm": 13.0,
+  "pitch_cv%": 0.0,
+  "group_gaps": 0,
+  "label": "ab-A-nexus-r2-sol",
+  "cond": "A",
+  "model": "sol",
+  "device": "nexus"
+ },
+ {
+  "n_main": 50,
+  "port_wh_mm": [
+   0.9,
+   0.9
+  ],
+  "aspect": "정방형",
+  "rows": 2,
+  "row_counts": [
+   25,
+   25
+  ],
+  "intra_row_mm": 0.0,
+  "pitch_med_mm": 6.5,
+  "pitch_cv%": 146.0,
+  "group_gaps": 12,
+  "label": "ab-B-nexus-r2-sol",
+  "cond": "B",
+  "model": "sol",
+  "device": "nexus"
+ },
+ {
+  "n_main": 48,
+  "port_wh_mm": [
+   2.2,
+   1.6
+  ],
+  "aspect": "가로형",
+  "rows": 2,
+  "row_counts": [
+   24,
+   24
+  ],
+  "intra_row_mm": 0.0,
+  "pitch_med_mm": 13.7,
+  "pitch_cv%": 0.0,
+  "group_gaps": 0,
+  "label": "ab-A-nexus-r2-opus",
+  "cond": "A",
+  "model": "opus",
+  "device": "nexus"
+ },
+ {
+  "n_main": 48,
+  "port_wh_mm": [
+   10.5,
+   7.7
+  ],
+  "aspect": "가로형",
+  "rows": 2,
+  "row_counts": [
+   24,
+   24
+  ],
+  "intra_row_mm": 0.0,
+  "pitch_med_mm": 13.9,
+  "pitch_cv%": 0.0,
+  "group_gaps": 0,
+  "label": "ab-B-nexus-r2-opus",
+  "cond": "B",
+  "model": "opus",
+  "device": "nexus"
+ },
+ {
+  "n_main": 48,
+  "port_wh_mm": [
+   10.2,
+   9.4
+  ],
+  "aspect": "정방형",
+  "rows": 2,
+  "row_counts": [
+   24,
+   24
+  ],
+  "intra_row_mm": 0.0,
+  "pitch_med_mm": 11.3,
+  "pitch_cv%": 6.4,
+  "group_gaps": 0,
+  "label": "ab-A-arista-r2-sol",
+  "cond": "A",
+  "model": "sol",
+  "device": "arista"
+ },
+ {
+  "n_main": 48,
+  "port_wh_mm": [
+   13.6,
+   9.4
+  ],
+  "aspect": "가로형",
+  "rows": 2,
+  "row_counts": [
+   24,
+   24
+  ],
+  "intra_row_mm": 0.0,
+  "pitch_med_mm": 14.7,
+  "pitch_cv%": 6.4,
+  "group_gaps": 0,
+  "label": "ab-B-arista-r2-sol",
+  "cond": "B",
+  "model": "sol",
+  "device": "arista"
+ },
+ {
+  "n_main": 50,
+  "port_wh_mm": [
+   6.8,
+   7.8
+  ],
+  "aspect": "정방형",
+  "rows": 2,
+  "row_counts": [
+   25,
+   25
+  ],
+  "intra_row_mm": 0.0,
+  "pitch_med_mm": 12.5,
+  "pitch_cv%": 76.7,
+  "group_gaps": 3,
+  "label": "ab-A-arista-r2-opus",
+  "cond": "A",
+  "model": "opus",
+  "device": "arista"
+ }
+]

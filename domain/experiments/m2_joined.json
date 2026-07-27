@@ -1,0 +1,164 @@
+[
+ {
+  "cond": "A",
+  "model": "opus",
+  "label": "ab-A-nexus-r2-opus",
+  "score": 3
+ },
+ {
+  "cond": "A",
+  "model": "sol",
+  "label": "ab-A-r760-r1-sol",
+  "score": 3.5
+ },
+ {
+  "cond": "B",
+  "model": "sol",
+  "label": "ab-B-arista-r2-sol",
+  "score": 3
+ },
+ {
+  "cond": "B",
+  "model": "sol",
+  "label": "ab-B-r760-r2-sol",
+  "score": 3
+ },
+ {
+  "cond": "B",
+  "model": "opus",
+  "label": "ab-B-nexus-r2-opus",
+  "score": 3
+ },
+ {
+  "cond": "A",
+  "model": "sol",
+  "label": "ab-A-nexus-r2-sol",
+  "score": 4
+ },
+ {
+  "cond": "B",
+  "model": "opus",
+  "label": "ab-B-dl360-r1-opus",
+  "score": 2
+ },
+ {
+  "cond": "A",
+  "model": "sol",
+  "label": "ab-A-dl360-r2-sol",
+  "score": 3
+ },
+ {
+  "cond": "B",
+  "model": "sol",
+  "label": "ab-B-r760-r1-sol",
+  "score": 4
+ },
+ {
+  "cond": "A",
+  "model": "sol",
+  "label": "ab-A-r760-r2-sol",
+  "score": 4.5
+ },
+ {
+  "cond": "A",
+  "model": "sol",
+  "label": "ab-A-nexus-r1-sol",
+  "score": 3
+ },
+ {
+  "cond": "A",
+  "model": "opus",
+  "label": "ab-A-dl360-r2-opus",
+  "score": 2
+ },
+ {
+  "cond": "B",
+  "model": "sol",
+  "label": "ab-B-arista-r1-sol",
+  "score": 4
+ },
+ {
+  "cond": "B",
+  "model": "sol",
+  "label": "ab-B-nexus-r1-sol",
+  "score": 3
+ },
+ {
+  "cond": "A",
+  "model": "opus",
+  "label": "ab-A-arista-r2-opus",
+  "score": 3
+ },
+ {
+  "cond": "B",
+  "model": "opus",
+  "label": "ab-B-nexus-r1-opus",
+  "score": 3
+ },
+ {
+  "cond": "A",
+  "model": "opus",
+  "label": "ab-A-arista-r1-opus",
+  "score": 4
+ },
+ {
+  "cond": "B",
+  "model": "sol",
+  "label": "ab-B-nexus-r2-sol",
+  "score": 3
+ },
+ {
+  "cond": "A",
+  "model": "opus",
+  "label": "ab-A-nexus-r1-opus",
+  "score": 3
+ },
+ {
+  "cond": "A",
+  "model": "sol",
+  "label": "ab-A-dl360-r1-sol",
+  "score": 4
+ },
+ {
+  "cond": "A",
+  "model": "sol",
+  "label": "ab-A-arista-r2-sol",
+  "score": 5
+ },
+ {
+  "cond": "A",
+  "model": "opus",
+  "label": "ab-A-dl360-r1-opus",
+  "score": 3
+ },
+ {
+  "cond": "A",
+  "model": "opus",
+  "label": "ab-A-r760-r2-opus",
+  "score": 3
+ },
+ {
+  "cond": "A",
+  "model": "opus",
+  "label": "ab-A-r760-r1-opus",
+  "score": 3
+ },
+ {
+  "cond": "B",
+  "model": "sol",
+  "label": "ab-B-dl360-r2-sol",
+  "score": 3
+ },
+ {
+  "cond": "B",
+  "model": "sol",
+  "label": "ab-B-dl360-r1-sol",
+  "score": 3
+ },
+ {
+  "cond": "A",
+  "model": "sol",
+  "label": "ab-A-arista-r1-sol",
+  "score": 4
+ }
+]

@@ -106,11 +106,17 @@ Status legend: `[ready]` dims+mass confirmed · `[proxy]` similar-model dims ·
 > of 24 with paired port LEDs, six QSFP28 uplink cages on the right in a
 > 2x3 block, a narrow left legend strip with status LEDs and port numbering only (management and console ports are on the rear side, not the front).
 
-### 14. arista-7280sr3-48yc8 `[ready]`
+### 14. arista-7280sr3-48yc8 `[ready]` — 실물 정면 사진 대조로 포트 배열 수정(2026-07-31): QSFP는 우측이 아니라 중앙
 > An Arista 7280SR3-48YC8 1U rackmount router-switch. 439.9 mm wide,
-> 43.5 mm (1U) tall, 467 mm deep, 9.18 kg. Front: 48 SFP28 cages in two
-> rows, eight QSFP28 ports grouped on the right, airflow vents along the
-> edges, left status LED column.
+> 43.5 mm (1U) tall, 467 mm deep, 9.18 kg. Front, three port blocks left
+> to right: 24 SFP28 cages (ports 1-24) in two tight rows of twelve, then
+> eight larger QSFP28 cages (ports 49-56) in the CENTER as two tight rows
+> of four, then 24 more SFP28 cages (ports 25-48) in two tight rows of
+> twelve. A teal port-number label band runs between the rows (blue over
+> the QSFP block). Perforated ventilation rows above and below the port
+> field, ARISTA logo and model name on the upper-left face, PS1/PS2
+> status LEDs upper-right. No management or console ports on the front
+> (they are on the rear beside the PSUs and the two fan modules).
 
 ## Security appliances
 

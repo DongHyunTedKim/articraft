@@ -25,6 +25,9 @@ sys.path.insert(0, str(REPO))
 import sdk  # noqa: E402
 
 ELEM_RE = re.compile(r"port|sfp|qsfp|rj4?5?|cage|jack|drive|bay|tray|carrier", re.I)
+# 세로 종횡비가 정상인 요소: 2.5인치 드라이브 캐리어는 세워서 꽂히므로
+# (약 15x70mm) 세로형이 맞다. 가로형 포트 그리드 기준을 적용하면 오탐.
+VERTICAL_OK_RE = re.compile(r"drive|carrier", re.I)
 MIN_MM = 4.0  # LED/라벨 점 배제
 
 
@@ -77,8 +80,9 @@ def audit(record_id: str) -> dict:
     row0 = sorted(e[1] for e in grid if abs(e[2] - st.mean(rows[0])) < max(h, 0.004))
     all_pitches = [b - a for a, b in zip(row0, row0[1:])]
     med = st.median(all_pitches) if all_pitches else 0
-    # 그룹 간 간격(중앙값 1.5배 초과)은 그룹 구분자로 분리 — 편차 아님
-    pitches = [x for x in all_pitches if 0 < x <= med * 1.5]
+    # 그룹 간 간격(중앙값 1.15배 초과)은 그룹 구분자로 분리 — 편차 아님.
+    # 1.5배였으나 7050S-52의 좁은 그룹 이음새(1.24x)가 편차로 오인돼 완화(2026-07-31).
+    pitches = [x for x in all_pitches if 0 < x <= med * 1.15]
     group_seps = len(all_pitches) - len(pitches)
     cv = (
         round(100 * st.pstdev(pitches) / st.mean(pitches), 1)
@@ -94,7 +98,8 @@ def audit(record_id: str) -> dict:
         issues.append(f"피치CV {cv}%")
     if gap is not None and gap > 3.0 and max(row_counts) == min(row_counts):
         issues.append(f"행간격 {gap}mm(벌어짐)")
-    if aspect == "세로형":
+    vertical_ok = all(VERTICAL_OK_RE.search(e[0]) for e in grid)
+    if aspect == "세로형" and not vertical_ok:
         issues.append("세로형 요소")
     return {
         "record_id": record_id,

@@ -55,12 +55,26 @@ Status legend: `[ready]` dims+mass confirmed · `[proxy]` similar-model dims ·
 > left ear panel with status light strip, power button and ports on the
 > right ear panel.
 
-### 6. hpe-dl380-gen10-8sff `[ready]`
+### 6. hpe-dl380-gen10-8sff `[ready]` — 실물 대조로 전면 배열 전면 수정, 2변형 생성 완료(2026-08-03)
 > An HPE ProLiant DL380 Gen10 2U rackmount server in the 8-bay SFF
-> configuration. 445.4 mm wide, 87.3 mm (2U) tall, 679.4 mm deep, 19.5 kg.
-> Front: one 8-bay block of 2.5-inch hot-swap drives on the left, blank bay
-> fillers to the right, universal media bay, power/health LED strip on the
-> right ear.
+> configuration. 445.4 mm wide body, 482.6 mm face across the rack ears,
+> 87.3 mm (2U) tall, 679.4 mm deep, 19.5 kg. Front, left to right — three
+> EQUAL-width boxes (~140 mm each, per the datasheet diagram) left of a
+> narrow control strip: Box 1 (blank filler, or universal media bay in the
+> media-bay variant: DVD-RW slot + eject, USB / display port / USB row,
+> vent panel), Box 2 blank filler, Box 3 the 8-bay block of vertical
+> 2.5-inch hot-swap SFF carriers (numbered 1-8). Then the vertical control
+> strip: four square LEDs stacked (power, health, NIC, blue UID), below
+> them iLO service port then USB 3.0, both portrait-oriented. Both ears
+> wear full-height black latch covers protruding ~8 mm (no exposed screw
+> holes); left cover Drive Box ID label, right cover HPE badge +
+> ProLiant DL380 Gen10 plate.
+>
+> 주의(과거 오류): 초판 프롬프트의 "drive block on the left"는 실물과
+> 반대(드라이브는 우측). LED·포트를 가로로 깔거나 드라이브 블록이 전면
+> 절반을 차지하는 회귀도 반복됨 — 균등 3분할과 세로 컨트롤 스트립을
+> 명시할 것. 생성 완료: 미디어베이 無 rec_...f8b34dbd / 有
+> rec_...6088ca90 (물성 19.5 kg 분배 포함, 2026-08-03).
 
 ### 7. hpe-dl380-gen10plus-a `[proxy]`
 > An HPE ProLiant DL380 Gen10 Plus 2U rackmount server. 445.4 mm wide,
@@ -206,3 +220,32 @@ Status legend: `[ready]` dims+mass confirmed · `[proxy]` similar-model dims ·
 > prismatic spring trigger at the BOTTOM of the escutcheon (below lever
 > pocket and lock cylinder), causal intent in meta.positive_motion, not
 > mimic-coupled. All joints rest at 0 within limits.
+
+## Patch panels / consoles (2026-08-03 신규)
+
+### 24. gaon-cat6-pp24 `[ready]` — 실측 치수, 생성 완료(rec_...63efac50, 2026-08-03)
+> A GAON (Gaon Cable) CAT.6 24-port 1U rackmount UTP patch panel. 482.6 mm
+> wide flat face plate spanning the rack with oval mounting slots at each
+> end, 44.45 mm (1U) tall, body 32 mm deep plus a rear cable-management
+> bracket to ~95 mm total, 0.75 kg. Front, left to right: GAON logo; 24
+> RJ45 jacks in a single row as FOUR blocks of six, each block topped by a
+> recessed white label strip; port numbers 1-24 below; CAT.6 marking right.
+> Each jack aperture is the RJ45 silhouette — a wide opening plus a
+> narrower bottom-center latch-tab notch (upside-down T), cut 2-3 mm deep.
+> Rear: 24 punch-down blocks + lacing bar. Static, jacks named
+> port_01..24. Distribute the 0.75 kg across all links with box-approx
+> inertia. No two visible faces coplanar (label strips must not reach the
+> faceplate rear plane).
+
+### 25. aten-cl5716n `[ready]` — 공식 데이터시트, 생성 완료(rec_...3d9b32e6, 2026-08-03)
+> An ATEN CL5716N Slideaway 16-port LCD KVM switch: a 1U slide-out console
+> drawer with a fold-up 19-inch LCD. 480 mm wide body, 482.6 mm face
+> across the mounting brackets, 44 mm (1U) tall, 689.2 mm deep, 13.65 kg.
+> Closed: flat 1U face — LCD lid top cover with ribbed center grip, two
+> release latch sliders, slim drawer bar with USB Type-A and a green POWER
+> LED right, ATEN logo centered. Articulations: drawer prismatic ~0.45 m;
+> LCD lid revolute 0..110 deg revealing keyboard + touchpad + port
+> pushbutton/LED strip. Distribute the 13.65 kg across links with
+> box-approx inertia. z-fighting hazards fixed in v1: bezel strips must
+> sit inboard of the lid outer planes; screen backing recessed below the
+> bezel frame; logo glyphs from non-overlapping boxes.

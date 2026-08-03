@@ -1,8 +1,9 @@
 # OIC TB equipment generation prompts
 
-One prompt per real device in `equipment_registry.csv`
-(source=`real_equipment_oic_tb`). Dimensions and mass come from the registry
-(SI-normalized). Run with the domain QC checklist:
+One prompt per device in `equipment_registry.csv` — real OIC TB equipment
+(source=`real_equipment_oic_tb`) plus AC 기준 자산(`reference_spec`).
+Dimensions and mass come from the registry (SI-normalized). Run with the
+domain QC checklist:
 
 ```bash
 uv run articraft generate --qc-blurb qc/network_equipment_checklist.md "<prompt>"
@@ -118,6 +119,19 @@ Status legend: `[ready]` dims+mass confirmed · `[proxy]` similar-model dims ·
 > status LEDs upper-right. No management or console ports on the front
 > (they are on the rear beside the PSUs and the two fan modules).
 
+### 21. arista-7050s-52 `[ready]` — 실물 사진 확보, 생성 완료(rec_...2aef4233, 2026-07-31)
+> An Arista 7050S-52 1U rackmount data-center top-of-rack switch. 445 mm
+> wide body, 44 mm (1U) tall, 406 mm deep, 7.71 kg. Front, left to right:
+> 48 SFP+ cages as THREE separate groups of sixteen (ports 1-16, 17-32,
+> 33-48), each group two tight rows of eight with a thin number strip
+> between the rows; then a right-hand utility block with four more SFP+
+> cages in a 2x2 block (ports 49-52), a USB port beneath, two stacked
+> RJ45 (console above management) at the far right edge, and a vertical
+> STATUS/FAN/PSU LED cluster above them. Port numbering pairs each column
+> vertically: odd number top cage, even number directly below. ARISTA
+> logo and model name lower-left. Rear: two hot-swap PSUs at the outer
+> edges, four fan modules between them.
+
 ## Security appliances
 
 ### 15. secui-bluemax-nfg800 `[proxy]` — NGF 510 치수 대용
@@ -140,11 +154,12 @@ Status legend: `[ready]` dims+mass confirmed · `[proxy]` similar-model dims ·
 
 ## Storage / GPU / Console
 
-### 18. dell-unity-xt380 `[proxy]`
-> A Dell EMC Unity XT 380 2U storage array. 444.5 mm wide, 84.6 mm (2U)
-> tall, 330.2 mm deep (disk processor enclosure), 20.23 kg. Front: 25
-> vertical 2.5-inch drive slots across the full width with thin carrier
-> latches and per-drive LEDs, thin top bezel strip with array status LEDs.
+### 18. dell-unity-xt380 `[ready]` — 공식 스펙시트(h17713) DPE 값으로 교체(2026-08-03); 구값은 DAE 스펙 오기
+> A Dell EMC Unity XT 380 2U storage array (25-drive disk processor
+> enclosure). 447.6 mm wide, 88.8 mm (2U) tall, 613.9 mm deep, 24.6 kg
+> (empty enclosure, drives excluded). Front: 25 vertical 2.5-inch drive
+> slots across the full width with thin carrier latches and per-drive
+> LEDs, thin top bezel strip with array status LEDs.
 
 ### 19. mitac-ft83-4u-gpu `[ready]` — 로드쇼 실물 + 기존 레코드 존재 (A/B 비교 대상)
 > A MiTAC Thunder HX FT83 4U rackmount 10-GPU server. 439 mm wide, 175 mm
@@ -161,3 +176,33 @@ Status legend: `[ready]` dims+mass confirmed · `[proxy]` similar-model dims ·
 > (prismatic, ~0.4 m travel) and the LCD lid flips up from the drawer
 > (revolute, 0 to ~110 degrees), revealing the keyboard and touchpad
 > beneath. Model both articulations with realistic limits.
+
+### 22. dell-emc-unity-300 `[ready]` — 실물 사진 확보, 생성 완료(rec_...b2a7f9d0, 2026-07-30)
+> A Dell EMC Unity 300 2U rackmount storage array — the 25-drive disk
+> processor enclosure. 444.5 mm wide body, 86.4 mm (2U) tall, 613.9 mm
+> deep, 20.0 kg. Front, left to right: a black left end cap with a
+> vertical blue status LED strip and a recessed release handle; 25
+> identical vertical 2.5-inch hot-swap drive carriers filling the full
+> width in three visual groups of 8/9/8 (uniform 17.3 mm pitch, slightly
+> wider seam between groups), each carrier a brushed-chrome upper
+> faceplate with recessed label window, a bright ORANGE release latch
+> block across its lower third, and a blue activity LED at the bottom;
+> a black right end cap with power button and release handle. Name the
+> carriers drive_bay_01..25 (static in v1) so ejection can be forked on
+> later. z-fighting hazard: seat the top cover into a recessed body
+> (cover >= 1 mm thick), never coplanar with the shell top.
+
+## Enclosures
+
+### 23. ac-server-rack-42u `[ready]` — AC 생성 기준 자산(실물 아님), 최종 rec_...6fe37d9f
+> A closed 42U server rack cabinet, 600 mm wide, 2.0 m tall, 1070 mm
+> deep, 125.09 kg empty (mass borrowed from the APC NetShelter SX AR3100
+> class). Articulations follow the adopted cabinet-door pattern:
+> door_front revolute about the vertical hinge edge 0..2.27 rad (effort
+> 30, velocity 1.5, damping 1.2, friction 0.45); handle_1 swing-handle
+> turn revolute about the door normal 0..90 deg; handle_lever_1 lift-out
+> revolute as a CHILD of handle_1, 0..60 deg; latch_cam_1 mimics the turn
+> joint only (never the lift); release_button_1 an independent 6 mm
+> prismatic spring trigger at the BOTTOM of the escutcheon (below lever
+> pocket and lock cylinder), causal intent in meta.positive_motion, not
+> mimic-coupled. All joints rest at 0 within limits.

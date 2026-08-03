@@ -15,7 +15,9 @@ collection, and the paid 3D-model collection.
   (Cisco/HPE/Arista style), `face_width_m` = ears/latches included
   (0.4826 for rackmount; Dell quotes this directly). Dell rows have
   `body_width_pending_field_measure` until measured on site.
-- `source`: `real_equipment_oic_tb` | `free_3d_model` | `paid_3d_model`.
+- `source`: `real_equipment_oic_tb` | `free_3d_model` | `paid_3d_model` |
+  `reference_spec` (AC 생성 기준 자산 — 실물이 아니라 공개 스펙/동급 제품
+  차용값으로 정의된 행, 2026-08-03 신설).
 - `scope=skip`: whole-server-room scene models, excluded from the
   per-object pipeline by decision (2026-07-15).
 - `reference`: `notion:<page-id>` points at the Notion row page, which

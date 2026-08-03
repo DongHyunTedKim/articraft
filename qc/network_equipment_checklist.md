@@ -16,8 +16,15 @@ Before declaring the model finished, verify every applicable item:
   the prompt gives no height.
 - Mounting ears: hole columns 0.4651 m apart center-to-center; ears are
   flush with the front face plane.
-- Front elements (RJ45/SFP ports, LEDs, buttons) are coplanar with or
-  recessed 0.001-0.002 m behind the faceplate — never floating in front.
+- Front elements (RJ45/SFP ports, LEDs, buttons) are recessed 0.001-0.002 m
+  behind the faceplate or protrude at least 0.0005 m — NEVER exactly
+  coplanar with it, and never floating detached in front.
+- No two visible faces anywhere on the model lie in the same plane
+  (z-fighting): every inset/label/cover is recessed or proud by at least
+  0.0005 m. When a skin panel (top cover, side wall, bezel) lies on a body
+  shell, inset the body by the panel thickness so the panel alone owns the
+  outer plane, and keep panel thickness >= 0.001 m (above mesh tessellation
+  tolerance).
 - Multi-port/multi-bay fronts: repeated elements form a uniform grid
   (identical size, uniform pitch), row/group structure matches the prompt
   and reference photo, and vertical pairs are tight (rows 0.001-0.003 m

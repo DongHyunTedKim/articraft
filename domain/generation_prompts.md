@@ -101,13 +101,20 @@ Status legend: `[ready]` dims+mass confirmed · `[proxy]` similar-model dims ·
 
 ## Network switches
 
-### 11. arista-7010t-48 `[ready]` — 이미지 대조로 포트 배열 수정(2026-07-16)
-> An Arista 7010T-48 1U rackmount access switch, shallow chassis: 445 mm
-> wide, 44 mm (1U) tall, only 254 mm deep, 4.6 kg. Front: 48 RJ45 copper
-> ports in three 16-port groups (each two rows of eight) with per-port link
-> LEDs, four SFP+ uplink cages in a 2x2 block to their right, then console
-> and management RJ45 ports, USB, and a small status LED column at the far
-> right edge.
+### 11. arista-7010t-48 `[ready]` — 신 SOP 재생성 완료(rec_...2bb37860, 2026-08-04); 구 gridfix 폐기
+> An Arista 7010T-48 1U rackmount access switch in a light-gray chassis,
+> shallow: 445 mm wide body, 482.6 mm face, 44 mm (1U) tall, only 254 mm
+> deep, 4.6 kg. Front: ARISTA 7010T-48 top-left; 48 RJ45 as THREE 16-port
+> groups (two tight rows of eight), EACH group enclosed by a thin raised
+> bezel frame (~1.5 mm face, >=0.5 mm proud) wrapping both rows and the
+> light number band between them (odd top with up-triangle, even bottom
+> with down-triangle). Stacked rows are MIRROR-mounted (top jacks
+> notch-up, contacts bottom; bottom jacks opposite); every aperture the
+> true RJ45 silhouette with subtly different interior colors (cavity /
+> contact block / gold pins / latch floor). Right: four SFP+ cages 2x2
+> (ports 49-52), square vent patches, console-over-management RJ45 stack
+> (IOIOI legend), vertical USB, STATUS/FAN/PS1/PS2 LED column. Distribute
+> the 4.6 kg across links; no two visible faces coplanar.
 
 ### 12. alcatel-os6450-48x `[ready]`
 > An Alcatel-Lucent OmniSwitch 6450-48X 1U rackmount switch. 440 mm wide,
@@ -249,3 +256,56 @@ Status legend: `[ready]` dims+mass confirmed · `[proxy]` similar-model dims ·
 > box-approx inertia. z-fighting hazards fixed in v1: bezel strips must
 > sit inboard of the lid outer planes; screen backing recessed below the
 > bezel frame; logo glyphs from non-overlapping boxes.
+
+## Rack accessories / firewalls / shelves (2026-08-04 신규)
+
+### 26. lacing-bar-offset-1u + lacing-bar-flat-1u `[ready]` — 2계열 x 4변형 = 8종 생성 완료(2026-08-04, 전량 원샷 클린)
+> (offset) A 1U 19-inch rack cable lacing bar in galvanized silver steel.
+> 482.6 mm across the end mounting flanges with EIA-pattern holes;
+> Z-shaped end brackets offset the bar about 50 mm behind the mounting
+> plane. The bar is a shallow hat-channel strip ~20 mm tall, 2 mm thick,
+> with a single centered row of N square lacing holes (about 10 x 10 mm,
+> uniform pitch). 0.5 kg distributed across links.
+>
+> (flat) A flat steel strip 482.6 x ~22 x 2 mm mounted FLUSH against the
+> posts, one screw hole at each end - no brackets, no channel. Single row
+> of N square slots. 0.2 kg distributed.
+>
+> 변형은 N(18/20/22/24)만 변경 - 같은 스팬에서 피치만 조정하는 fork가
+> 가장 싸다. 공통: 참조 사진의 케이블·벨크로는 "ignore ..."로 제외,
+> box-approx inertia 합계 정확히 일치, 가시면 동일평면 금지.
+
+### 27. fortinet-fg601e `[ready]` — 생성 완료(rec_...ea2a88fb, 2026-08-04)
+> A Fortinet FortiGate 601E 1U rackmount NGFW in a WHITE light-gray
+> chassis. 432 mm body, 482.6 mm face, 44.45 mm (1U), 380 mm deep,
+> 7.5 kg. Front, left to right: Fortinet mark + FortiGate 601E label
+> top-left with a barcode strip beneath, round-hole vent field below,
+> the four-LED column (STATUS/ALARM/HA/POWER) standing separately right
+> of that field; a second vent patch above USB/CONSOLE; two stacked blue
+> USB 3.0 ports each with a slot beneath; CONSOLE RJ45 with metal bezel;
+> HA(top)/MGMT(bottom) stack; a LARGE 9x7 staggered honeycomb vent
+> between the service zone and the data ports; 8 GE RJ45 as two 2x2
+> blocks (odd top / even bottom); 8 SFP as two 2x2 blocks; SFP+ X1/X2
+> vertical pair. Ears with exactly TWO screw holes each. Rear: four fan
+> modules, blank PSU2 bay, one AC PSU (C14). 7.5 kg distributed.
+>
+> 표준 문구 (모든 RJ45 장비에 재사용): (1) "stacked RJ45 pairs are
+> MIRROR-mounted - top jack latch-notch UP with contacts near the
+> bottom, bottom jack the opposite; single jacks notch-down." (2) "port
+> interior parts in subtly DIFFERENT colors for simulator readability -
+> near-black cavity, lighter dark-gray contact block, gold pin row,
+> medium-dark latch floor."
+
+### 28. netapp-naj1501 `[ready]` — 생성 완료(rec_...39d2deb3, 2026-08-04)
+> A NetApp NAJ-1501 2U rackmount storage shelf chassis with its front
+> bezel installed. 447 mm body, 482.6 mm face, 86.4 mm (2U), 484 mm
+> deep, 24.4 kg fully populated (empty 16 kg). TWO-LAYER bezel: a
+> brushed-SILVER outer diamond-lattice frame with curved top/bottom
+> bands, over a recessed FINER dark mesh screen (>=2 mm behind, visible
+> through the diamond openings); a white label plate left-of-center with
+> the blue NetApp cube logo (non-overlapping glyph boxes); black left
+> end cap with three icons (power/attention/location) and a two-digit
+> green seven-segment shelf-ID display (raised glyphs); plain black
+> right end cap. Ears: slim dark flanges with two oval slots per U.
+> Rear: plain flat panel - 자료 없음, 포트·팬 지어내지 말 것. 내부
+> 드라이브 비모델링(베젤 장착 상태).

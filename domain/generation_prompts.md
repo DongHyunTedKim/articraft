@@ -17,12 +17,6 @@ verify against the datasheet/photo before large batches.
 Status legend: `[ready]` dims+mass confirmed · `[proxy]` similar-model dims ·
 `[blocked]` needs field measurement.
 
-공통 규칙 — 텍스트/글자 (2026-08-05): 포트 번호·라벨·브랜드명 등 모든 글자는
-CadQuery `Text()`(폰트 압출) 금지. 글자 하나가 수만 삼각형이 되어 자산 용량의
-99%를 차지한 사례(7010T-48 v3) 있음. 대신 얇은 박스 조합의 세그먼트 글리프
-(영숫자는 14/16-세그먼트, 직선 획만, 곡선 금지)로 표현한다. 글자 수 자체는
-줄이지 않는다 — 실물의 라벨은 전부 유지. QC 체크리스트에도 동일 규칙 명문화됨.
-
 ---
 
 ## Servers
@@ -315,3 +309,22 @@ CadQuery `Text()`(폰트 압출) 금지. 글자 하나가 수만 삼각형이 �
 > right end cap. Ears: slim dark flanges with two oval slots per U.
 > Rear: plain flat panel - 자료 없음, 포트·팬 지어내지 말 것. 내부
 > 드라이브 비모델링(베젤 장착 상태).
+
+### 29. agilent-e7900a `[proxy]` — 생성 완료(rec_...daf4573e, 2026-08-05)
+> Agilent E7900A RouterTester 900 four-slot network test chassis, a
+> freestanding benchtop instrument (NOT rack-mounted). 425 x 88.1 x
+> 500 mm cream/ivory Agilent beige; molded rounded end caps wrap the
+> left/right front edges (caps overhang every neighbor plane); four
+> rubber feet. 11.0 kg distributed. FRONT: cream fascia strip (Agilent
+> logo left, model plate right); 2x2 module grid over thin bay rails;
+> far-left vertical recessed power strip with black rocker switch.
+> Modules: E5216A (light blue-gray, 2 yellow-framed GBIC ports, TX/RX
+> LEDs, lime XP badge) / E7920A (royal blue, 12 gold coax in a row =
+> six TX/RX pairs, SGNL/ALRM dots) / E7919A x2 (royal blue, 2 GBIC
+> ports, orange Routing badge - lettering sized INSIDE the badge with
+> margin). Each module: green LED display reading 'RIP' at left, white
+> ejector latch, silver thumbscrews. REAR: recessed blue-gray
+> controller panel (RJ45 MDI/MDI-X + LINK/ACT, D-sub15 DAISY CHAIN
+> IN=lime/OUT=pink fields, BNC IN/OUT + 10MHz + 1PPS, SERIAL RJ45),
+> large recessed label field center, IEC C14 right. 치수·질량 추정치
+> (공개 데이터시트 없음). 표준 문구(2) 포트 내부 색 구분 적용.

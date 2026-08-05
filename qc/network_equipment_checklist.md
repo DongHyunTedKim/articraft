@@ -41,9 +41,3 @@ Before declaring the model finished, verify every applicable item:
   rail_left, port_rj45_01, fan_1, psu_1).
 - All dimensions are module-level constants in SI meters, not inline
   literals scattered through builder code.
-- Lettering (port numbers, labels, brand text) is NEVER built with font
-  outlines (CadQuery `Text()` or any extruded glyph): tessellation turns a
-  1 mm glyph into tens of thousands of triangles. Build every character as
-  a segment-style compound of thin boxes — 14/16-segment layout for
-  alphanumerics, angular straight strokes only, no curves. Keep each text
-  part under ~200 triangles.

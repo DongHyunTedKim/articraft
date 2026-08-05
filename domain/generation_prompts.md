@@ -17,6 +17,11 @@ verify against the datasheet/photo before large batches.
 Status legend: `[ready]` dims+mass confirmed · `[proxy]` similar-model dims ·
 `[blocked]` needs field measurement.
 
+글자/라벨 워크플로: 문자 라벨이 많은 장비는 투패스로 생성한다 — 최초
+generate 프롬프트에서는 글자를 빼고(라벨 자리는 빈 필드·배지로만) 형상을
+수렴시킨 뒤, 마지막 fork 1회로 "add all lettering"을 얹는다. 글자 파츠는
+컴파일을 크게 느리게 하므로(회당 ~2분) 반복 루프에서 빼는 것.
+
 ---
 
 ## Servers

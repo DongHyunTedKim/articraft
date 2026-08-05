@@ -1,0 +1,346 @@
+<title>Articraft 포크 전수조사</title>
+<style>
+  :root {
+    --paper: #faf9f6;
+    --ink: #26231e;
+    --muted: #6f6a60;
+    --faint: #918a7d;
+    --accent: #c9853f;
+    --accent-text: #a05f1e;
+    --upstream: #5b7285;
+    --line: #e4e0d7;
+    --card: #f2efe8;
+    --code-bg: #eeebe2;
+    --warn-bg: #f6ead8;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #1c1a16;
+      --ink: #e8e4dc;
+      --muted: #a39c8f;
+      --faint: #7d7669;
+      --accent: #d99a55;
+      --accent-text: #d99a55;
+      --upstream: #8aa3b5;
+      --line: #34302a;
+      --card: #242119;
+      --code-bg: #2a2620;
+      --warn-bg: #33291b;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #1c1a16; --ink: #e8e4dc; --muted: #a39c8f; --faint: #7d7669;
+    --accent: #d99a55; --accent-text: #d99a55; --upstream: #8aa3b5;
+    --line: #34302a; --card: #242119; --code-bg: #2a2620; --warn-bg: #33291b;
+  }
+  :root[data-theme="light"] {
+    --paper: #faf9f6; --ink: #26231e; --muted: #6f6a60; --faint: #918a7d;
+    --accent: #c9853f; --accent-text: #a05f1e; --upstream: #5b7285;
+    --line: #e4e0d7; --card: #f2efe8; --code-bg: #eeebe2; --warn-bg: #f6ead8;
+  }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    background: var(--paper); color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Segoe UI", "Noto Sans KR", sans-serif;
+    line-height: 1.62; margin: 0; padding: 0 20px 80px;
+    font-size: 15.5px;
+  }
+  main { max-width: 880px; margin: 0 auto; }
+  header.doc { padding: 56px 0 8px; border-bottom: 2px solid var(--ink); margin-bottom: 8px; }
+  .eyebrow { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--accent-text); font-weight: 700; margin-bottom: 10px; }
+  h1 { font-family: "Avenir Next", -apple-system, "Apple SD Gothic Neo", sans-serif; font-size: 34px; line-height: 1.2; margin: 0 0 10px; text-wrap: balance; font-weight: 700; }
+  .meta { color: var(--muted); font-size: 13.5px; display: flex; flex-wrap: wrap; gap: 6px 18px; padding: 10px 0 18px; }
+  .meta b { color: var(--ink); font-weight: 600; }
+  h2 { font-family: "Avenir Next", -apple-system, "Apple SD Gothic Neo", sans-serif; font-size: 22px; margin: 56px 0 6px; padding-top: 18px; border-top: 1px solid var(--line); text-wrap: balance; }
+  h2 .secno { color: var(--accent-text); font-variant-numeric: tabular-nums; margin-right: 8px; }
+  h3 { font-size: 16.5px; margin: 30px 0 6px; }
+  h3 .subno { color: var(--accent-text); font-variant-numeric: tabular-nums; margin-right: 6px; font-weight: 700; }
+  p { margin: 8px 0; max-width: 72ch; }
+  .lede { color: var(--muted); max-width: 76ch; }
+  code, .path {
+    font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, monospace;
+    font-size: .88em; background: var(--code-bg); padding: 1px 5px; border-radius: 4px;
+    word-break: break-all;
+  }
+  /* summary cards */
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 22px 0 6px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; }
+  .card .num { font-size: 28px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
+  .card .lbl { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+  .card.fork .num { color: var(--accent-text); }
+  /* chips */
+  .chip { display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: .05em; border-radius: 999px; padding: 1.5px 9px; vertical-align: 1px; white-space: nowrap; }
+  .chip.agent { background: var(--accent); color: var(--paper); }
+  .chip.human { background: transparent; color: var(--accent-text); border: 1px solid var(--accent); }
+  .chip.ci { background: var(--upstream); color: var(--paper); }
+  .chip.dead { background: transparent; color: var(--muted); border: 1px dashed var(--faint); }
+  /* tables */
+  .tablewrap { overflow-x: auto; margin: 14px 0; border: 1px solid var(--line); border-radius: 8px; }
+  table { border-collapse: collapse; width: 100%; font-size: 13.8px; min-width: 640px; }
+  th { text-align: left; font-size: 11.5px; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); font-weight: 700; padding: 9px 12px; border-bottom: 1.5px solid var(--line); background: var(--card); }
+  td { padding: 8px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  td.sz { white-space: nowrap; font-variant-numeric: tabular-nums; color: var(--muted); }
+  td .why { color: var(--muted); }
+  /* TOC */
+  nav.toc { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 16px 22px; margin: 24px 0; }
+  nav.toc .toct { font-size: 11.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); font-weight: 700; margin-bottom: 8px; }
+  nav.toc ol { margin: 0; padding-left: 0; list-style: none; columns: 2; column-gap: 32px; }
+  nav.toc li { margin: 3px 0; break-inside: avoid; font-size: 14px; }
+  nav.toc a { color: var(--ink); text-decoration: none; }
+  nav.toc a:hover { color: var(--accent-text); }
+  nav.toc .n { color: var(--accent-text); font-variant-numeric: tabular-nums; font-weight: 700; margin-right: 7px; }
+  @media (max-width: 620px) { nav.toc ol { columns: 1; } }
+  /* callouts */
+  .note { background: var(--warn-bg); border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; padding: 10px 16px; margin: 14px 0; font-size: 14px; max-width: 76ch; box-sizing: border-box; }
+  .note b:first-child { color: var(--accent-text); }
+  figure { margin: 26px 0; }
+  figure svg { max-width: 100%; height: auto; display: block; margin: 0 auto; }
+  figcaption { font-size: 13px; color: var(--muted); text-align: center; margin-top: 10px; max-width: 68ch; margin-left: auto; margin-right: auto; }
+  .legend { display: flex; gap: 22px; justify-content: center; font-size: 12.5px; color: var(--muted); margin-top: 6px; flex-wrap: wrap; }
+  .sw { display: inline-block; width: 11px; height: 11px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+  ul.tight { margin: 6px 0; padding-left: 22px; max-width: 76ch; }
+  ul.tight li { margin: 4px 0; }
+  a { color: var(--accent-text); }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+</style>
+
+<main>
+<header class="doc">
+  <div class="eyebrow">Articraft Fork · 전수조사 리포트</div>
+  <h1>upstream 대비 포크 변경 파일 카탈로그</h1>
+</header>
+<div class="meta">
+  <span>upstream <b>mattzh72/articraft</b></span>
+  <span>분기점 <b><code>59eb5e0e</code></b> (마지막 병합 2026-07-13)</span>
+  <span>기준 HEAD <b><code>1f6472b2</code></b></span>
+  <span>조사일 <b>2026-08-05</b></span>
+</div>
+
+<p class="lede">이 문서는 <code>git diff upstream/main...main</code> 전수조사 결과를 6개 계층으로 분류한 카탈로그입니다.
+각 항목에는 <b>무엇이·왜·누가 소비하는지</b>를 적었고, 마지막 장에 upstream 병합 시 지켜야 할 유지보수 절차를 정리했습니다.</p>
+
+<div class="cards">
+  <div class="card"><div class="num">16</div><div class="lbl">upstream 파일 수정 (전부 소규모 seam)</div></div>
+  <div class="card fork"><div class="num">64</div><div class="lbl">포크 신설 파일 (코드·문서·실험)</div></div>
+  <div class="card fork"><div class="num">1,248</div><div class="lbl">data/ 추적 파일 (upstream은 전체 gitignore)</div></div>
+  <div class="card"><div class="num">4</div><div class="lbl">tests/fork 가드 테스트</div></div>
+</div>
+
+<nav class="toc" aria-label="목차">
+  <div class="toct">목차</div>
+  <ol>
+    <li><a href="#s0"><span class="n">0</span>포크 운영 원칙</a></li>
+    <li><a href="#s1"><span class="n">1</span>Upstream 파일 수정 — seam 16개</a></li>
+    <li><a href="#s2"><span class="n">2</span>생성 품질 파이프라인 (신설)</a></li>
+    <li><a href="#s3"><span class="n">3</span>반출·운영 도구 (신설)</a></li>
+    <li><a href="#s4"><span class="n">4</span>실험 자산 — domain/experiments</a></li>
+    <li><a href="#s5"><span class="n">5</span>추적 데이터 — data/</a></li>
+    <li><a href="#s6"><span class="n">6</span>Git·LFS 설정</a></li>
+    <li><a href="#s7"><span class="n">7</span>유지보수 가이드 (병합 절차)</a></li>
+  </ol>
+</nav>
+
+<!-- ============================================================ -->
+<h2 id="s0"><span class="secno">0</span>포크 운영 원칙</h2>
+<p>이 포크는 upstream(로컬 우선 3D 생성 하네스)을 <b>OIC TB 통신국사 디지털트윈 자산 공장</b>으로 특화합니다. 충돌을 최소화하는 4원칙:</p>
+<ul class="tight">
+  <li><b>수정은 최소 seam</b> — upstream 파일 안의 변경은 몇 줄짜리 훅에 그친다 (16개 전부 소규모, 최대 +14줄).</li>
+  <li><b>신설은 무충돌 경로</b> — 포크 고유 로직은 upstream이 만들 리 없는 경로(<code>domain/</code>, <code>qc/</code>, <code>scripts/</code>, <code>sdk/_docs/domain/</code>)에 둔다.</li>
+  <li><b>seam은 테스트로 가드</b> — 병합 후 <code>uv run --group dev pytest tests/fork -q</code>가 깨지면 재적용할 seam을 알려준다.</li>
+  <li><b>데이터는 git+LFS 추적</b> — upstream은 <code>data/</code> 전체를 무시하지만, 포크는 확정 레코드를 자산으로 보존한다.</li>
+</ul>
+
+<figure>
+  <svg viewBox="0 0 860 330" role="img" aria-label="Articraft 생성 파이프라인 위에 포크 기여 지점 6곳이 주황색으로 표시된 구조도">
+    <defs>
+      <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+      </marker>
+    </defs>
+    <g fill="none" stroke="currentColor" stroke-width="1.3" opacity="0.75">
+      <rect x="20"  y="120" width="118" height="46" rx="6"/>
+      <rect x="186" y="120" width="140" height="46" rx="6"/>
+      <rect x="374" y="120" width="118" height="46" rx="6"/>
+      <rect x="540" y="120" width="118" height="46" rx="6"/>
+      <rect x="706" y="120" width="134" height="46" rx="6"/>
+      <line x1="138" y1="143" x2="182" y2="143" marker-end="url(#arr)"/>
+      <line x1="326" y1="143" x2="370" y2="143" marker-end="url(#arr)"/>
+      <line x1="492" y1="143" x2="536" y2="143" marker-end="url(#arr)"/>
+      <line x1="658" y1="143" x2="702" y2="143" marker-end="url(#arr)"/>
+    </g>
+    <g font-size="13" fill="currentColor" text-anchor="middle" font-weight="600">
+      <text x="79"  y="148">CLI generate</text>
+      <text x="256" y="141">에이전트 루프</text>
+      <text x="256" y="158" font-size="11" font-weight="400">(system prompt+SDK)</text>
+      <text x="433" y="148">compile → URDF</text>
+      <text x="599" y="148">records + 캐시</text>
+      <text x="773" y="148">뷰어 / AssetHub</text>
+    </g>
+    <!-- fork contributions (accent) -->
+    <g font-size="12" font-weight="600">
+      <g stroke="#c9853f" fill="none" stroke-width="1.6">
+        <rect x="150" y="22" width="212" height="40" rx="6"/>
+        <rect x="20"  y="238" width="200" height="40" rx="6"/>
+        <rect x="360" y="238" width="180" height="40" rx="6"/>
+        <rect x="600" y="238" width="240" height="40" rx="6"/>
+        <line x1="256" y1="62" x2="256" y2="116" marker-end="url(#arr)" stroke-dasharray="4 3"/>
+        <line x1="120" y1="238" x2="105" y2="170" marker-end="url(#arr)" stroke-dasharray="4 3"/>
+        <line x1="450" y1="238" x2="440" y2="170" marker-end="url(#arr)" stroke-dasharray="4 3"/>
+        <line x1="660" y1="238" x2="620" y2="170" marker-end="url(#arr)" stroke-dasharray="4 3"/>
+      </g>
+      <g fill="#c9853f" text-anchor="middle">
+        <text x="256" y="40">① 도메인 팩 주입</text>
+        <text x="256" y="55" font-size="10.5" font-weight="400">prompt 섹션·SDK 캐논·예제 3종</text>
+        <text x="120" y="256">② --qc-blurb 체크리스트</text>
+        <text x="120" y="271" font-size="10.5" font-weight="400">+ ⑤ 가격 오버라이드 seam</text>
+        <text x="450" y="256">③ 이중 감사기</text>
+        <text x="450" y="271" font-size="10.5" font-weight="400">coplanar · grids</text>
+        <text x="720" y="256">④ AssetHub export + 데시메이션</text>
+        <text x="720" y="271" font-size="10.5" font-weight="400">+ ⑥ records git+LFS 추적</text>
+      </g>
+    </g>
+  </svg>
+  <div class="legend">
+    <span><span class="sw" style="border:1.4px solid currentColor; opacity:.75;"></span>upstream 파이프라인</span>
+    <span><span class="sw" style="border:1.6px solid #c9853f;"></span>포크 기여 지점 (①–⑥)</span>
+  </div>
+  <figcaption>upstream 생성 파이프라인(가로 흐름)에 포크가 접붙인 6개 지점. ①은 seam(§1-A), ②–④는 신설 파일(§2·§3), ⑥은 데이터 정책(§5·§6).</figcaption>
+</figure>
+
+<!-- ============================================================ -->
+<h2 id="s1"><span class="secno">1</span>Upstream 파일 수정 — seam 16개</h2>
+<p>16개 전부 소규모이며 6개 클러스터로 묶입니다. <b>seam 마커 주석이 있는 것은 A-3(<code>agent/cost.py</code>) 하나뿐</b> — 나머지는 병합 사고 시 조용히 사라질 수 있어 §7에서 다룹니다.</p>
+
+<h3><span class="subno">A-1</span>도메인 팩 주입 — 9파일 (가장 큰 클러스터)</h3>
+<p>네트워크 장비 요청이 오면 에이전트가 도메인 규칙(§2-①)을 읽도록 system prompt에 끼워 넣는 배선입니다.</p>
+<div class="tablewrap"><table>
+  <tr><th>파일</th><th>규모</th><th>내용</th></tr>
+  <tr><td><span class="path">agent/prompts/spec.py</span></td><td class="sz">+6</td><td>6개 프롬프트 변형 각각에 <code>domain_network_equipment.md</code> 섹션 1줄씩 등록</td></tr>
+  <tr><td><span class="path">agent/prompts/generated/…_{6종}.txt</span></td><td class="sz">+8 ×6</td><td>위의 재생성 산출물 — 6파일 모두 바이트 단위 동일 블록. <b>손병합 금지, spec.py에서 재생성</b></td></tr>
+  <tr><td><span class="path">agent/workspace_docs.py</span></td><td class="sz">+1</td><td>도메인 캐논 문서를 에이전트 가상 경로 <code>references/domain/network-equipment.md</code>로 매핑</td></tr>
+  <tr><td><span class="path">sdk/_profiles.py</span></td><td class="sz">+3/−1</td><td><code>_DOMAIN_DOCS</code> 튜플 신설, full 문서 세트에 도메인 캐논 포함</td></tr>
+</table></div>
+
+<h3><span class="subno">A-2</span>CLI 플래그 노출 — <span class="path">cli/main.py</span> <span style="color:var(--muted); font-weight:400;">(+14)</span></h3>
+<p>upstream 러너에 이미 있던 <code>--qc-blurb</code>·<code>--system-prompt</code> 옵션을 최상위 <code>articraft generate</code>로 배관만 연결. 로직 변경 없음 — 우리의 모든 생성이 이 플래그로 QC 체크리스트를 주입합니다.</p>
+
+<h3><span class="subno">A-3</span>가격 오버라이드 seam — <span class="path">agent/cost.py</span> <span style="color:var(--muted); font-weight:400;">(+6)</span></h3>
+<p><code>pricing_for_provider_model()</code> 최상단 3줄 훅. upstream 가격표에 OpenRouter 항목이 없어 비용 추적이 안 되던 것을 <code>domain/pricing_overrides.json</code>(§3-③) 우선 조회로 해결. <b>유일하게 in-code seam 마커 주석 보유 + tests/fork 가드.</b></p>
+
+<h3><span class="subno">A-4</span>의존성 — <span class="path">pyproject.toml</span> · <span class="path">uv.lock</span></h3>
+<p><code>fast-simplification>=0.1.13</code> 1줄 (export 데시메이션용, §3-①). uv.lock은 재생성 파일 — 충돌 시 <code>uv lock</code>으로 재생성.</p>
+
+<h3><span class="subno">A-5</span>데이터 정책 — <span class="path">.gitignore</span> · <span class="path">CLAUDE.md</span></h3>
+<p><code>.gitignore</code>: upstream의 <code>data/</code> 전체 무시를 뒤집어 확정 레코드는 추적, 파생물(<code>cache/</code>·<code>local/</code>·재료화 산출물)만 무시. <code>CLAUDE.md</code>: 포크 노트·seam 절차 2문단 추가.</p>
+
+<h3><span class="subno">A-6</span>뷰어 버그픽스 — <span class="path">viewer/web/…/useThreeScene.ts</span> <span style="color:var(--muted); font-weight:400;">(+1)</span></h3>
+<p>effect cleanup에서 RAF 핸들을 0으로 리셋 — 언마운트/리마운트 시 죽은 frame id 참조 방지. <b>upstream에 PR 후보.</b></p>
+
+<!-- ============================================================ -->
+<h2 id="s2"><span class="secno">2</span>생성 품질 파이프라인 (신설)</h2>
+<p>포크의 심장부. "이미지만 건네주면 착착 나오는" 품질의 근거가 되는 파일들로, <b>소비자 기준</b> 세 무리로 나뉩니다.
+<span class="chip agent">에이전트가 읽음</span> <span class="chip human">사람이 씀</span> <span class="chip ci">코드가 실행</span></p>
+
+<h3><span class="subno">2-①</span>에이전트에 주입되는 도메인 지식 <span class="chip agent">에이전트가 읽음</span></h3>
+<div class="tablewrap"><table>
+  <tr><th>파일</th><th>규모</th><th>내용</th></tr>
+  <tr><td><span class="path">agent/prompts/sections/domain_network_equipment.md</span></td><td class="sz">7L</td><td>system prompt 섹션: 랙마운트 요청 시 캐논 문서 선독 지시 + 하드 규칙(19″=0.4826 m 얼굴폭, 홀 스팬 0.4651 m, 파트 명명, floating 금지)</td></tr>
+  <tr><td><span class="path">sdk/_docs/domain/90_network_equipment.md</span></td><td class="sz">131L</td><td>도메인 캐논: 몸통폭 vs 얼굴폭 2폭 규칙, 프롬프트-캐논 우선순위, 1U=44.45 mm의 실기 오차</td></tr>
+  <tr><td><span class="path">sdk/_examples/base/ 3종</span></td><td class="sz">3파일</td><td>few-shot 예제 — 24포트 패치패널(평판+키스톤 컷), 42U 캐비닛(도어 힌지 관절 템플릿), 1U 스위치(EIA-310 귀+리세스 포트). 예제 검색 도구로 회수됨</td></tr>
+  <tr><td><span class="path">qc/network_equipment_checklist.md</span></td><td class="sz">43L</td><td><code>--qc-blurb</code>로 매 생성에 주입되는 검수 기준: 동일평면 전면 금지(±0.5 mm), 치수·귀·그리드 규칙, "디테일 생략으로 통과 금지" 조항</td></tr>
+</table></div>
+
+<h3><span class="subno">2-②</span>사람(운영자)이 쓰는 지식 베이스 <span class="chip human">사람이 씀</span></h3>
+<div class="tablewrap"><table>
+  <tr><th>파일</th><th>규모</th><th>내용</th></tr>
+  <tr><td><span class="path">domain/generation_prompts.md</span></td><td class="sz">335L</td><td>프롬프트팩 — 7개 카테고리 · 29종 장비 프롬프트, 상태 태그·완료 레코드 ID·과거 오류 경고·투패스 글자 워크플로. 코드가 읽지 않음(§FAQ: 생성 시 자동 주입 아님)</td></tr>
+  <tr><td><span class="path">domain/equipment_registry.csv</span></td><td class="sz">51행×19열</td><td>SI 정규화 장비 카탈로그 — 실물·구매·기준 자산의 치수/질량/자산 위치/레코드 ID/quality_flags</td></tr>
+  <tr><td><span class="path">domain/image_survey_checklist.md</span></td><td class="sz">45L</td><td>사진→프롬프트 요소 추출 표준 판독 순서 (공통 10항목 + 카테고리별 포커스)</td></tr>
+  <tr><td><span class="path">domain/README.md</span></td><td class="sz">53L</td><td>레지스트리 스키마 설명 + 자산 명명 규칙 (<code>ac_/cg_/oem_</code> 접두, style_v 접미 폐지 2026-08-03)</td></tr>
+</table></div>
+
+<h3><span class="subno">2-③</span>생성 후 이중 감사기 <span class="chip ci">코드가 실행</span></h3>
+<div class="tablewrap"><table>
+  <tr><th>파일</th><th>규모</th><th>내용</th></tr>
+  <tr><td><span class="path">domain/audit_coplanar.py</span></td><td class="sz">251L</td><td>z-fighting 검출기 — 동일방향 AABB 면 비교, FAIL &lt;0.05 mm / WARN &lt;0.3 mm. 개방 메시·타공 패널에서 오탐 있음(수동 판정)</td></tr>
+  <tr><td><span class="path">domain/audit_grids.py</span></td><td class="sz">155L</td><td>반복 요소 그리드 감사 — 행 구조·피치 CV ≤5%·행간 정렬 ≤1 mm. model.py를 직접 실행해 SDK 컨텍스트로 검사</td></tr>
+</table></div>
+
+<!-- ============================================================ -->
+<h2 id="s3"><span class="secno">3</span>반출·운영 도구 (신설)</h2>
+
+<h3><span class="subno">3-①</span>AssetHub export — <span class="path">scripts/export_assethub.py</span> <span style="color:var(--muted); font-weight:400;">(494L)</span> <span class="chip ci">현행</span></h3>
+<p>확정 레코드 → AssetHub 규격 zip. 3대 변환: 메시 경로 재작성 / 256면 초과 충돌체 AABB 박스 치환 / <b>2048면 초과 visual 메시의 컴포넌트별 데시메이션</b>(면적·표면거리·AABB 3중 가드, 실패 시 원본 유지). 규격 자가검사 후 zip 생성. 2026-07-30 AssetHub 규격 확인사항이 docstring에 박제됨.</p>
+
+<h3><span class="subno">3-②</span>구세대 핸드오프 — <span class="path">domain/make_handoff.py</span> <span style="color:var(--muted); font-weight:400;">(167L)</span> <span class="chip dead">후계자 있음</span></h3>
+<p>환경팀 전달용 zip 패키저(4개 장비 하드코딩, 폐지된 style_v 명명). §3-①이 사실상 대체 — 정리 후보.</p>
+
+<h3><span class="subno">3-③</span>가격 오버라이드 3종 세트 <span class="chip ci">코드가 실행</span></h3>
+<div class="tablewrap"><table>
+  <tr><th>파일</th><th>규모</th><th>내용</th></tr>
+  <tr><td><span class="path">agent/cost_overrides.py</span></td><td class="sz">44L</td><td>seam(§1 A-3)이 호출하는 구현부 — JSON 조회, 미등재 시 upstream에 위임</td></tr>
+  <tr><td><span class="path">domain/pricing_overrides.json</span></td><td class="sz">38L</td><td>OpenRouter 모델 가격표 (USD/1M tokens, _meta.as_of 스탬프)</td></tr>
+  <tr><td><span class="path">domain/refresh_pricing.py</span></td><td class="sz">89L</td><td>등재된 모델만 OpenRouter API에서 가격 갱신 (<code>--dry-run</code> 지원). 모델 추가는 의도적 수동 편집</td></tr>
+  <tr><td><span class="path">tests/fork/test_cost_overrides.py</span></td><td class="sz">35L·4개</td><td>seam 가드 — upstream 진입점을 호출해 검증, 실패 메시지가 재적용할 seam 위치를 명시</td></tr>
+</table></div>
+
+<h3><span class="subno">3-④</span>기타</h3>
+<div class="tablewrap"><table>
+  <tr><th>파일</th><th>규모</th><th>내용</th></tr>
+  <tr><td><span class="path">docs/_articraft_viewer_and_generation_guide.md</span></td><td class="sz">527L</td><td>한글 온보딩 가이드 (생성→컴파일→뷰어). 부록의 <code>data/local/cost_override.json</code> 로컬 비용 경로는 §3-③ seam과 <b>별개의 구세대 메커니즘</b> — 문서 갱신 후보</td></tr>
+  <tr><td><span class="path">restore_workbench.py</span></td><td class="sz">68L</td><td>일회성 정리 스크립트 잔재 — 스스로 "삭제해도 됨"이라 출력함. 삭제 후보</td></tr>
+</table></div>
+
+<!-- ============================================================ -->
+<h2 id="s4"><span class="secno">4</span>실험 자산 — <span class="path">domain/experiments/</span></h2>
+<p>도메인 팩 도입 근거가 된 <b>A/B 실험 하네스 (2026-07, 종결)</b>. 역사 기록으로 보존하되, 한 폴더만은 현역입니다.</p>
+<div class="tablewrap"><table>
+  <tr><th>구성</th><th>상태</th><th>내용</th></tr>
+  <tr><td><span class="path">ref_images/ (25파일)</span></td><td><span class="chip agent">현역</span></td><td><b>생성 시 <code>--image</code>로 넘기는 레퍼런스 사진 라이브러리</b> — 실험 잔재가 아니라 지금도 매 생성에 쓰는 실전 자산 (합성 시트 포함)</td></tr>
+  <tr><td><span class="path">ab_runner.py · dashboard.html</span></td><td><span class="chip dead">종결</span></td><td>32런 (4장비×2조건×2모델×2반복) 스레드 러너 + 한글 진행 대시보드</td></tr>
+  <tr><td><span class="path">measure.py · results.csv</span></td><td><span class="chip dead">종결</span></td><td>M1 정량 지표 — EIA 치수 오차·수리 비용·QC 경고·명명 준수율 (27런 기록)</td></tr>
+  <tr><td><span class="path">eval.html · m2_*.json</span></td><td><span class="chip dead">종결</span></td><td>M2 블라인드 시각 평가 (조건 은닉 1–5점)</td></tr>
+  <tr><td><span class="path">port_analysis/ (7png+2json)</span></td><td><span class="chip dead">종결</span></td><td>포트 그리드 결함 심층 분석 — grids 감사기의 설계 근거</td></tr>
+</table></div>
+
+<!-- ============================================================ -->
+<h2 id="s5"><span class="secno">5</span>추적 데이터 — <span class="path">data/</span> 1,248파일</h2>
+<p>upstream은 <code>data/</code> 전체를 gitignore하지만 포크는 자산을 git(일부 LFS)으로 보존합니다. 출처가 둘로 갈립니다:</p>
+<div class="tablewrap"><table>
+  <tr><th>그룹</th><th>파일 수</th><th>출처</th><th>내용</th></tr>
+  <tr><td><span class="path">records/ (78 레코드)</span></td><td class="sz">628</td><td><b>우리 68 + upstream 10</b></td><td>확정 생성 자산 — OIC TB 장비 16종 계열 + upstream 샘플. 매니페스트는 74행 (아카이브 A/B 4건 의도적 제외)</td></tr>
+  <tr><td><span class="path">categories/</span></td><td class="sz">453</td><td>upstream 스냅샷</td><td>카테고리 메타데이터 (upstream 작성자 커밋 보존)</td></tr>
+  <tr><td><span class="path">system_prompts/</span></td><td class="sz">98</td><td>upstream 스냅샷</td><td>공유 프롬프트 스냅샷</td></tr>
+  <tr><td><span class="path">batch_specs/</span></td><td class="sz">63</td><td>upstream 스냅샷</td><td>upstream의 배치 실험 CSV (2026-03, 가전 프롬프트 등)</td></tr>
+  <tr><td>가이드 6종</td><td class="sz">6</td><td>혼합</td><td>카테고리 선정 가이드 (영문=upstream, <b>_KOR 2종=우리 번역</b>)</td></tr>
+</table></div>
+
+<!-- ============================================================ -->
+<h2 id="s6"><span class="secno">6</span>Git·LFS 설정</h2>
+<div class="tablewrap"><table>
+  <tr><th>파일</th><th>내용</th></tr>
+  <tr><td><span class="path">.gitattributes</span></td><td><code>data/records/** filter=lfs</code> — 추적 레코드 전체가 LFS 경유</td></tr>
+  <tr><td><span class="path">.lfsconfig</span></td><td><code>fetchexclude = data/records/**</code> — 클론 시 LFS blob 다운로드 생략(온디맨드)</td></tr>
+</table></div>
+<div class="note"><b>주의:</b> 이 조합(fetchexclude × pre-commit stash) 때문에 checkout/stash가 레코드를 포인터로 바꿔놓는 사고가 반복됐음. 복구는 <code>git lfs checkout</code> 금지 — <code>.git/lfs/objects</code>에서 직접 복사 후 <code>git add</code> 정규화.</div>
+
+<!-- ============================================================ -->
+<h2 id="s7"><span class="secno">7</span>유지보수 가이드 — upstream 병합 절차</h2>
+<p>기능 추가나 upstream 병합 때 이 순서를 따르면 포크가 깨지지 않습니다:</p>
+<ul class="tight">
+  <li><b>① 병합 후 즉시</b> <code>uv run --group dev pytest tests/fork -q</code> — 실패 메시지가 재적용할 seam(현재는 cost.py)을 지목.</li>
+  <li><b>② 재생성 파일은 손병합 금지</b> — <code>designer_system_prompt_*.txt</code> 6종은 <code>spec.py</code>에서 재생성, <code>uv.lock</code>은 <code>uv lock</code>.</li>
+  <li><b>③ 무마커 seam 15개 육안 확인</b> — 특히 <span class="path">spec.py</span>·<span class="path">workspace_docs.py</span>·<span class="path">sdk/_profiles.py</span>·<span class="path">cli/main.py</span>의 1–14줄짜리 배선은 충돌 없이도 사라질 수 있음. 이 문서 §1의 표가 체크리스트.</li>
+  <li><b>④ <code>data/</code>를 절대 blanket-ignore/삭제하지 않기</b> — .gitignore seam(A-5)이 병합에서 되살아나지 않는지 확인.</li>
+  <li><b>⑤ LFS 포인터 검사</b> — 병합·stash 후 <code>grep -rl "git-lfs" data/records | wc -l</code>이 0인지.</li>
+</ul>
+
+<div class="note"><b>개선 후보 (조사 중 발견):</b>
+① seam 15개에 가드 테스트 또는 마커 주석 확대 — 현재 tests/fork는 cost seam만 커버.
+② 정리 대상: <span class="path">restore_workbench.py</span>(자칭 삭제 가능), <span class="path">make_handoff.py</span>(export_assethub이 대체), 뷰어 가이드 부록의 구세대 비용 경로.
+③ <span class="path">useThreeScene.ts</span> RAF 픽스는 upstream PR 후보.</div>
+
+<p style="color:var(--faint); font-size:12.5px; margin-top:48px; border-top:1px solid var(--line); padding-top:14px;">
+조사 방법: <code>git diff upstream/main...main</code> 전수 + 파일별 diff/내용 분석 (서브에이전트 2기 병렬). data/ 세부는 first-add 저자 기준 분류. 2026-08-05, HEAD <code>1f6472b2</code>.</p>
+</main>

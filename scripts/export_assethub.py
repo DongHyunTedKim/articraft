@@ -20,13 +20,20 @@ The record must be compiled first (`uv run articraft compile <record-id>
 --target full --validate --strict-geom-qc`); this script only repackages the
 materialized URDF. It never edits the record.
 
-Two transforms are applied to the materialized URDF:
+Three transforms are applied to the materialized URDF/meshes:
   1. mesh paths are rewritten `assets/meshes/X.obj` -> `meshes/X.obj`
   2. collision meshes above `--collision-face-budget` faces are replaced by
      their local-frame AABB box, satisfying the AssetHub requirement that
      collision geometry be simpler than visual geometry. Rotated collision
      origins are handled exactly (the local AABB center is rotated by rpy
-     before offsetting the origin). Visual meshes are never touched.
+     before offsetting the origin).
+  3. visual meshes above `--visual-face-budget` faces are quadric-decimated
+     per connected component (extruded font glyphs tessellate a 1 mm
+     character into tens of thousands of faces). Each component escalates
+     through face targets until it passes surface-area and surface-distance
+     preservation gates; the whole mesh must also hold its AABB. Anything
+     that cannot be reduced safely keeps its original geometry. Colors are
+     unaffected: they live in URDF <material rgba>, not in the OBJ.
 
 Every check in the AssetHub export checklist that can be verified locally is
 run against the finished package; a failure exits non-zero.
@@ -53,6 +60,90 @@ BAD_PATH_MARKERS = ("package://", "file://", "/Users/", "/home/", "C:\\")
 
 def obj_face_count(path: Path) -> int:
     return sum(1 for line in path.read_text().splitlines() if line.startswith("f "))
+
+
+AABB_DRIFT_LIMIT = 0.0002  # 0.2 mm: max per-axis AABB change a decimated mesh may show
+# Max surface-area change per component. Healthy decimation of micro glyphs
+# lands at 0.90-1.03x area; stroke collapse lands at 0.3-0.7x (measured on
+# 7010T-48 text meshes) — 12% cleanly separates the two.
+AREA_DRIFT_LIMIT = 0.12
+# Area alone misses a local collapse inside a multi-glyph component, so each
+# candidate is also gated on surface distance: p98 of original-surface samples
+# to the decimated mesh. Healthy chord error measures ~0.05 mm on 1 mm glyphs;
+# a collapsed stroke measures ~0.2 mm+.
+SURFACE_DIST_LIMIT = 0.0001  # 0.1 mm
+SURFACE_SAMPLES = 800
+MIN_COMPONENT_FACES = 64  # never decimate a connected component below this
+
+
+def _decimate_component(part, target: int):
+    """Decimate one connected component, escalating the face target until the
+    surface area survives; returns the original component when nothing does.
+
+    Whole-mesh decimation lets thin glyph strokes collapse while the mesh AABB
+    stays put, so quality is judged per component by area preservation.
+    """
+    import numpy as np
+    import trimesh
+
+    orig_area = float(part.area)
+    if orig_area <= 0 or len(part.faces) <= MIN_COMPONENT_FACES:
+        return part
+    samples, _ = trimesh.sample.sample_surface(part, SURFACE_SAMPLES, seed=0)
+    for attempt in (target, target * 4, target * 16):
+        face_count = max(attempt, MIN_COMPONENT_FACES)
+        if face_count >= len(part.faces):
+            break
+        slim = part.simplify_quadric_decimation(face_count=face_count)
+        if len(slim.faces) == 0 or len(slim.vertices) == 0:
+            continue
+        if abs(float(slim.area) / orig_area - 1.0) > AREA_DRIFT_LIMIT:
+            continue
+        _, dist, _ = trimesh.proximity.closest_point(slim, samples)
+        if float(np.percentile(dist, 98)) > SURFACE_DIST_LIMIT:
+            continue
+        return slim
+    return part
+
+
+def decimate_visual_mesh(src: Path, dst: Path, budget: int) -> tuple[int, int] | str:
+    """Quadric-decimate `src` to roughly `budget` faces, writing to `dst`.
+
+    Each connected component (e.g. one glyph of a text mesh) is decimated
+    independently with a proportional share of the budget. Returns
+    (faces_before, faces_after) on success, or a reason string when the
+    original should be copied instead (never raises).
+    """
+    try:
+        import numpy as np
+        import trimesh
+    except ImportError:
+        return "trimesh not installed"
+    try:
+        mesh = trimesh.load_mesh(src)
+        if isinstance(mesh, trimesh.Scene):
+            mesh = mesh.to_mesh()
+        before = len(mesh.faces)
+        if before <= budget:
+            return "already within budget"
+        components = list(mesh.split(only_watertight=False)) or [mesh]
+        slim_parts = [
+            _decimate_component(part, int(budget * len(part.faces) / before)) for part in components
+        ]
+        slim = trimesh.util.concatenate(slim_parts) if len(slim_parts) > 1 else slim_parts[0]
+        after = len(slim.faces)
+        if after >= before:
+            return "no component could be decimated safely"
+        if after > before * 0.8:
+            # marginal wins aren't worth re-encoding (trimesh writes verbose OBJ)
+            return f"insufficient reduction ({before} -> {after})"
+        drift = float(np.abs(np.asarray(mesh.bounds) - np.asarray(slim.bounds)).max())
+        if drift > AABB_DRIFT_LIMIT:
+            return f"AABB drift {drift * 1000:.2f} mm exceeds {AABB_DRIFT_LIMIT * 1000:.1f} mm"
+        slim.export(dst)
+        return before, after
+    except Exception as exc:  # decimation is an optimization; never block export
+        return f"{type(exc).__name__}: {exc}"
 
 
 def obj_aabb(path: Path) -> tuple[tuple[float, float, float], tuple[float, float, float]]:
@@ -311,6 +402,13 @@ def main() -> int:
         default=256,
         help="Collision meshes above this face count are replaced by their AABB box.",
     )
+    ap.add_argument(
+        "--visual-face-budget",
+        type=int,
+        default=2048,
+        help="Visual meshes above this face count are quadric-decimated to it; "
+        "0 disables decimation.",
+    )
     ap.add_argument("--no-zip", action="store_true")
     args = ap.parse_args()
 
@@ -336,12 +434,21 @@ def main() -> int:
     source_meshes = source / "assets" / "meshes"
     replaced, skipped = simplify_collisions(root, source_meshes, args.collision_face_budget)
     used = rewrite_mesh_paths(root)
+    decimated: list[tuple[str, int, int]] = []
+    kept_original: list[str] = []
     for base in sorted(used):
         src = source_meshes / base
         if not src.is_file():
             print(f"error: referenced mesh missing from materialization: {src}")
             return 2
-        shutil.copy2(src, package / "meshes" / base)
+        dst = package / "meshes" / base
+        if args.visual_face_budget > 0 and obj_face_count(src) > args.visual_face_budget:
+            result = decimate_visual_mesh(src, dst, args.visual_face_budget)
+            if isinstance(result, tuple):
+                decimated.append((base, *result))
+                continue
+            kept_original.append(f"{base} ({result})")
+        shutil.copy2(src, dst)
 
     urdf_out = package / f"{asset_name}.urdf"
     ET.indent(tree, space="  ")
@@ -352,6 +459,15 @@ def main() -> int:
     print(f"meshes copied: {len(used)}   collision meshes boxed: {replaced}")
     for item in skipped:
         print(f"  ! left as mesh (unsound to box): {item}")
+    if decimated:
+        before = sum(b for _, b, _ in decimated)
+        after = sum(a for _, _, a in decimated)
+        print(f"visual meshes decimated: {len(decimated)} ({before} -> {after} faces)")
+        worst = sorted(decimated, key=lambda row: row[1], reverse=True)[:3]
+        for base, b, a in worst:
+            print(f"    {base}: {b} -> {a}")
+    for item in kept_original:
+        print(f"  ! kept original visual mesh: {item}")
 
     print("checks:")
     checks = validate(package, urdf_out, args.collision_face_budget)

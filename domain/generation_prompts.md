@@ -17,6 +17,12 @@ verify against the datasheet/photo before large batches.
 Status legend: `[ready]` dims+mass confirmed · `[proxy]` similar-model dims ·
 `[blocked]` needs field measurement.
 
+공통 규칙 — 텍스트/글자 (2026-08-05): 포트 번호·라벨·브랜드명 등 모든 글자는
+CadQuery `Text()`(폰트 압출) 금지. 글자 하나가 수만 삼각형이 되어 자산 용량의
+99%를 차지한 사례(7010T-48 v3) 있음. 대신 얇은 박스 조합의 세그먼트 글리프
+(영숫자는 14/16-세그먼트, 직선 획만, 곡선 금지)로 표현한다. 글자 수 자체는
+줄이지 않는다 — 실물의 라벨은 전부 유지. QC 체크리스트에도 동일 규칙 명문화됨.
+
 ---
 
 ## Servers
